@@ -12,7 +12,7 @@ class DataLoader():
     def _build_games(self):
         self.games = {}
         base_url = 'https://replay.pokemonshowdown.com/'
-        for page in range(1, 3):
+        for page in range(1, 10):
             games_url = f'https://replay.pokemonshowdown.com/search.json?format=gen{self.generation}{self.format}&page={page}'
             data = requests.get(games_url).json()
             for game in data:
