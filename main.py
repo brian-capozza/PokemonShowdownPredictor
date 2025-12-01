@@ -6,6 +6,7 @@ import pandas as pd
 def main():
     game_parser = GameParser()
     df = game_parser.parse_all_games()
+    df.to_csv('results.csv')
 
     base_model = BaselineModel(df)
     base_model.evaluate('base_stat_total')

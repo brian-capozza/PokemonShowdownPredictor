@@ -13,32 +13,6 @@ class GameParser():
         self.poke_stats = {}
         self.move_stats = {}
 
-    def _single_turn(self):
-        data = {
-            'p1_slot1_active': 0,
-            'p1_slot1_hp': 0,
-            'p1_slot1_atk': 0,
-            'p1_slot1_def': 0,
-            'p1_slot1_spa': 0,
-            'p1_slot1_spd': 0,
-            'p1_slot1_spe': 0,
-            'p1_slot1_type1': 'fire',
-            'p1_slot1_type2': 'water',
-
-
-            'p1_slot2_active': 0,
-            'p1_slot3_active': 0,
-            'p1_slot4_active': 0,
-            'p1_slot5_active': 0,
-            'p1_slot6_active': 0,
-            'p2_slot1_active': 0,
-            'p2_slot2_active': 0,
-            'p2_slot3_active': 0,
-            'p2_slot4_active': 0,
-            'p2_slot5_active': 0,
-            'p2_slot6_active': 0,
-        }
-
     def _encode_slots(self, game_id, active_p1, active_p2):
         """
         Builds a fixed-length one-hot encoded representation of both players' teams.
@@ -53,6 +27,10 @@ class GameParser():
         # Extract ordered teams
         p1_team = [p.split(",")[0] for p in self.meta[game_id]["poke"]["p1"]]
         p2_team = [p.split(",")[0] for p in self.meta[game_id]["poke"]["p2"]]
+        if len(p1_team) > 6:
+            print(p1_team)
+        if len(p2_team) > 6:
+            print(p2_team)
 
         # -----------------------------
         # Helper for filling slot stats
@@ -233,28 +211,28 @@ class GameParser():
 
         # Iterate through turns
         for turn_num, turn in self.log[game_id].items():
-            faint = {'p1': False, 'p2': False}
+            faint = {'p1': 0, 'p2': 0}
             turn_num = int(turn_num)
 
             # ---------------------------
             # Create turn-specific fields
             # ----------------------------
             turn_dict = {
-                'p1_move_accuracy': None,
-                'p1_move_basepower': None,
-                'p1_move_pp': None,
-                'p1_move_category': None,
-                'p1_move_type': None,
-                'p1_switch': False,
+                'p1_move_accuracy': 0,
+                'p1_move_basepower': 0,
+                'p1_move_pp': 0,
+                'p1_move_category': 'Other',
+                'p1_move_type': 'Other',
+                'p1_switch': 0,
 
-                'p2_move_accuracy': None,
-                'p2_move_basepower': None,
-                'p2_move_pp': None,
-                'p2_move_category': None,
-                'p2_move_type': None,
-                'p2_switch': False,
+                'p2_move_accuracy': 0,
+                'p2_move_basepower': 0,
+                'p2_move_pp': 0,
+                'p2_move_category': 'Other',
+                'p2_move_type': 'Other',
+                'p2_switch': 0,
 
-                'weather': None
+                'weather': 'None'
             }
 
             # ---------------------------
@@ -274,8 +252,11 @@ class GameParser():
                         self.move_stats[move] = self.data_loader.get_move(move)
 
                     m = self.move_stats[move]
-                    turn_dict[f"{player}_move_accuracy"]   = m.get("accuracy")
-                    turn_dict[f"{player}_move_basepower"]  = m.get("basePower")
+                    if m.get("accuracy"):
+                        turn_dict[f"{player}_move_accuracy"] = 100
+                    else:
+                        turn_dict[f"{player}_move_accuracy"] = m.get("accuracy")
+                    turn_dict[f"{player}_move_basepower"]  = m.get("base_power")
                     turn_dict[f"{player}_move_pp"]         = m.get("pp")
                     turn_dict[f"{player}_move_category"]   = m.get("category")
                     turn_dict[f"{player}_move_type"]       = m.get("type")
@@ -292,7 +273,7 @@ class GameParser():
                 # ─────────── FAINT ───────────
                 elif '|faint|' in event:
                     player = event.split('|')[2][:2]
-                    faint[player] = True
+                    faint[player] = 1
 
                 # ─────────── SWITCH / DRAG / REPLACE ───────────
                 elif '|switch|' in event or '|drag|' in event or '|replace|' in event:
@@ -300,7 +281,7 @@ class GameParser():
                     player = event_list[2][:2]
 
                     if not faint[player]:  
-                        turn_dict[f"{player}_switch"] = True
+                        turn_dict[f"{player}_switch"] = 1
 
                     nickname = event_list[2].split(': ')[1]
                     pokemon_info = event_list[3]
@@ -336,13 +317,6 @@ class GameParser():
 
         df = pd.DataFrame(data)
 
-        # One-hot encode move types, move category, and weather
-        df = pd.get_dummies(df, columns=[
-            "p1_move_type", "p2_move_type",
-            "p1_move_category", "p2_move_category",
-            "weather"
-        ], prefix_sep="_")
-
         df["p1_win"] = 1 if self.meta[game_id]["winner"] == "p1" else 0
         df["p1_win"] = 1 if self.meta[game_id]["winner"] == "p1" else 0
         return df
@@ -359,6 +333,20 @@ class GameParser():
 
         # Concatenate everything into one global DF
         full_df = pd.concat(all_dfs, ignore_index=True)
+
+        full_df = pd.get_dummies(
+            full_df,
+            columns=[
+                "p1_move_type", "p2_move_type",
+                "p1_move_category", "p2_move_category",
+                "weather"
+            ],
+            prefix_sep="_",
+            dtype=int  # forces 0/1 instead of True/False
+        )
+
+        print(full_df.shape)
+
         return full_df
     
 
