@@ -24,13 +24,15 @@ class GameParser():
 
         features = {'game_id': game_id.split('-')[-1]}
 
-        # Extract ordered teams
+        # fill to be length six
         p1_team = [p.split(",")[0] for p in self.meta[game_id]["poke"]["p1"]]
+        # Pad or trim to length 6
+        p1_team = (p1_team + [None] * 6)[:6]
+
+
         p2_team = [p.split(",")[0] for p in self.meta[game_id]["poke"]["p2"]]
-        if len(p1_team) > 6:
-            print(p1_team)
-        if len(p2_team) > 6:
-            print(p2_team)
+        # Pad or trim to length 6
+        p2_team = (p2_team + [None] * 6)[:6]
 
         # -----------------------------
         # Helper for filling slot stats
@@ -48,28 +50,48 @@ class GameParser():
             all_types = [
                 "Normal","Fire","Water","Electric","Grass","Ice",
                 "Fighting","Poison","Ground","Flying","Psychic",
-                "Bug","Rock","Ghost","Dragon","Dark","Steel"
+                "Bug","Rock","Ghost","Dragon","Dark","Steel", "None"
             ]
 
-            # Active flag
-            features[f"{slot}_active"] = 1 if species == active_species else 0
+            if species is not None:
+                # Active flag
+                features[f"{slot}_active"] = 1 if species == active_species else 0
 
-            # Retrieve stats
-            stats = self.poke_stats[species]
+                # Retrieve stats
+                stats = self.poke_stats[species]
 
-            features[f"{slot}_hp"]  = stats["hp"]
-            features[f"{slot}_atk"] = stats["atk"]
-            features[f"{slot}_def"] = stats["def"]
-            features[f"{slot}_spa"] = stats["spa"]
-            features[f"{slot}_spd"] = stats["spd"]
-            features[f"{slot}_spe"] = stats["spe"]
+                features[f"{slot}_hp"]  = stats["hp"]
+                features[f"{slot}_atk"] = stats["atk"]
+                features[f"{slot}_def"] = stats["def"]
+                features[f"{slot}_spa"] = stats["spa"]
+                features[f"{slot}_spd"] = stats["spd"]
+                features[f"{slot}_spe"] = stats["spe"]
 
-            t1 = stats["type1"]
-            t2 = stats["type2"]
+                t1 = stats["type1"]
+                t2 = stats["type2"]
 
-            # One-hot types
-            for t in all_types:
-                features[f"{slot}_type_{t}"] = int(t == t1 or t == t2)
+                # One-hot types
+                for t in all_types:
+                    features[f"{slot}_type_{t}"] = int(t == t1 or t == t2)
+            
+            else:
+                # Active flag
+                features[f"{slot}_active"] = 0
+
+                features[f"{slot}_hp"]  = 0
+                features[f"{slot}_atk"] = 0
+                features[f"{slot}_def"] = 0
+                features[f"{slot}_spa"] = 0
+                features[f"{slot}_spd"] = 0
+                features[f"{slot}_spe"] = 0
+
+                t1 = "None"
+                t2 = "None"
+
+                # One-hot types
+                for t in all_types:
+                    features[f"{slot}_type_{t}"] = int(t == t1 or t == t2)
+
 
         # -----------------------------
         # Fill all 6 slots for p1
@@ -107,7 +129,7 @@ class GameParser():
         game_info['nickname_converter'] = {}
         game_text_split = game_text.split('\n')
         for line in game_text_split:
-            if '|-message|' in line and ('forfeited' in line or 'lost due to inactivity' in line):
+            if ('|-message|' in line and ('forfeited' in line or 'lost due to inactivity' in line)) or ('|raw|' in line):
                 # |-message|spindakaasie1 forfeited.
                 return False
 
