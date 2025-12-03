@@ -4,6 +4,24 @@ from web_scraper import DataLoader
 GENERATION = 5
 FORMAT = 'ou'
 
+ALL_TYPES = [
+    "Normal","Fire","Water","Electric","Grass","Ice",
+    "Fighting","Poison","Ground","Flying","Psychic",
+    "Bug","Rock","Ghost","Dragon","Dark","Steel", "None"
+]
+
+WEATHER = [
+    "Hail", "Sandstorm", "RainDaince", "SunnyDay", "None"
+]
+
+MOVE_CATEGORIES = [
+    "Physical", "Special", "Status", "None"
+]
+
+STATUS_EFFECTS = [
+    "tox", "brn", "par", "psn", "frz", "slp", "None"
+]
+
 class GameParser():
     def __init__(self):
         self.data_loader = DataLoader(GENERATION, FORMAT)
@@ -47,11 +65,9 @@ class GameParser():
             slot = f"{prefix}_slot{slot_index}"
 
             # Standard type list for one-hot
-            all_types = [
-                "Normal","Fire","Water","Electric","Grass","Ice",
-                "Fighting","Poison","Ground","Flying","Psychic",
-                "Bug","Rock","Ghost","Dragon","Dark","Steel", "None"
-            ]
+
+            game_info = self.meta[game_id]
+            game_info['poke_to_slot'][species] = slot
 
             if species is not None:
                 # Active flag
@@ -66,12 +82,13 @@ class GameParser():
                 features[f"{slot}_spa"] = stats["spa"]
                 features[f"{slot}_spd"] = stats["spd"]
                 features[f"{slot}_spe"] = stats["spe"]
+                features[f"{slot}_status"] = self.meta[game_id]['poke_status'].get(f"{slot}_status", "None")
 
                 t1 = stats["type1"]
                 t2 = stats["type2"]
 
                 # One-hot types
-                for t in all_types:
+                for t in ALL_TYPES:
                     features[f"{slot}_type_{t}"] = int(t == t1 or t == t2)
             
             else:
@@ -84,12 +101,13 @@ class GameParser():
                 features[f"{slot}_spa"] = 0
                 features[f"{slot}_spd"] = 0
                 features[f"{slot}_spe"] = 0
+                features[f"{slot}_status"] = "None"
 
                 t1 = "None"
                 t2 = "None"
 
                 # One-hot types
-                for t in all_types:
+                for t in ALL_TYPES:
                     features[f"{slot}_type_{t}"] = int(t == t1 or t == t2)
 
 
@@ -127,6 +145,27 @@ class GameParser():
         self.meta[game_id] = {}
         game_info = self.meta[game_id]
         game_info['nickname_converter'] = {}
+        game_info['poke_to_slot'] = {}
+        game_info['poke_status'] = {}
+        game_info['poke_boosts'] = {
+            'p1_hp_boost': 0,
+            'p1_atk_boost': 0,
+            'p1_def_boost': 0,
+            'p1_spa_boost': 0,
+            'p1_spd_boost': 0,
+            'p1_spe_boost': 0,
+            'p1_accuracy_boost': 0,
+            'p1_evasion_boost': 0,
+
+            'p2_hp_boost': 0,
+            'p2_atk_boost': 0,
+            'p2_def_boost': 0,
+            'p2_spa_boost': 0,
+            'p2_spd_boost': 0,
+            'p2_spe_boost': 0,
+            'p2_accuracy_boost': 0,
+            'p2_evasion_boost': 0,
+        }
         game_text_split = game_text.split('\n')
         for line in game_text_split:
             if ('|-message|' in line and ('forfeited' in line or 'lost due to inactivity' in line)) or ('|raw|' in line):
@@ -237,21 +276,30 @@ class GameParser():
             turn_num = int(turn_num)
 
             # ---------------------------
+            # Build slot encoding (288D)
+            # ---------------------------
+            slot_features = self._encode_slots(
+                game_id,
+                current_poke['p1'],
+                current_poke['p2']
+            )
+
+            # ---------------------------
             # Create turn-specific fields
             # ----------------------------
             turn_dict = {
                 'p1_move_accuracy': 0,
                 'p1_move_basepower': 0,
                 'p1_move_pp': 0,
-                'p1_move_category': 'Other',
-                'p1_move_type': 'Other',
+                'p1_move_category': 'None',
+                'p1_move_type': 'None',
                 'p1_switch': 0,
 
                 'p2_move_accuracy': 0,
                 'p2_move_basepower': 0,
                 'p2_move_pp': 0,
-                'p2_move_category': 'Other',
-                'p2_move_type': 'Other',
+                'p2_move_category': 'None',
+                'p2_move_type': 'None',
                 'p2_switch': 0,
 
                 'weather': 'None'
@@ -312,26 +360,115 @@ class GameParser():
                     self.meta[game_id]['nickname_converter'][nickname] = pokemon_name
                     current_poke[player] = pokemon_name
 
-            # ---------------------------
-            # Build slot encoding (288D)
-            # ---------------------------
-            slot_features = self._encode_slots(
-                game_id,
-                current_poke['p1'],
-                current_poke['p2']
-            )
+                    self.meta[game_id]['poke_boosts'] = {
+                        'p1_hp_boost': 0,
+                        'p1_atk_boost': 0,
+                        'p1_def_boost': 0,
+                        'p1_spa_boost': 0,
+                        'p1_spd_boost': 0,
+                        'p1_spe_boost': 0,
+                        'p1_accuracy_boost': 0,
+                        'p1_evasion_boost': 0,
+
+                        'p2_hp_boost': 0,
+                        'p2_atk_boost': 0,
+                        'p2_def_boost': 0,
+                        'p2_spa_boost': 0,
+                        'p2_spd_boost': 0,
+                        'p2_spe_boost': 0,
+                        'p2_accuracy_boost': 0,
+                        'p2_evasion_boost': 0,
+                    }
+
+                elif '|-status|' in event:
+                    event_list = event.split('|')
+                    nickname = event_list[2].split(': ')[1]
+                    pokemon = self.meta[game_id]['nickname_converter'][nickname]
+                    slot = self.meta[game_id]['poke_to_slot'][pokemon]
+                    self.meta[game_id]['poke_status'][f"{slot}_status"] = event_list[3]
+
+                elif '|-curestatus|' in event:
+                    event_list = event.split('|')
+                    nickname = event_list[2].split(': ')[1]
+                    pokemon = self.meta[game_id]['nickname_converter'][nickname]
+                    slot = self.meta[game_id]['poke_to_slot'][pokemon]
+                    self.meta[game_id]['poke_status'][f"{slot}_status"] = 'None'
+
+                elif '|-unboost|' in event:
+                    event_list = event.split('|')
+                    player = event_list[2][:2]
+                    nickname = event_list[2].split(': ')[1]
+                    pokemon = self.meta[game_id]['nickname_converter'][nickname]
+                    stat = event_list[3]
+                    value = -int(event_list[4])
+
+                    self.meta[game_id]['poke_boosts'][f'{player}_{stat}_boost'] += value
+
+                elif '|-boost|' in event:
+                    event_list = event.split('|')
+                    player = event_list[2][:2]
+                    nickname = event_list[2].split(': ')[1]
+                    pokemon = self.meta[game_id]['nickname_converter'][nickname]
+                    stat = event_list[3]
+                    value = int(event_list[4])
+
+                    self.meta[game_id]['poke_boosts'][f'{player}_{stat}_boost'] += value
+
+                # |-unboost|p2a: Dragonite|atk|1
+                # |-boost|p2a: Dragonite|atk|1
+                # |-status|p2a: Politoed|tox
+                # |-curestatus|p2a: Politoed|tox|[msg]
+                # |-sidestart|p2: Birdmanmons|move: Toxic Spikes
+                # |-sideend|p2: Birdmanmons|move: Toxic Spikes|[of] p2a: Toxicroak
+
+
+            # One-hot types
+            for t in ALL_TYPES:
+                turn_dict[f"p1_move_type_{t}"] = int(t == turn_dict["p1_move_type"])
+                turn_dict[f"p2_move_type_{t}"] = int(t == turn_dict["p2_move_type"])
+
+            turn_dict.pop("p1_move_type", None)
+            turn_dict.pop("p2_move_type", None)
+
+            # One-hot categories
+            for c in MOVE_CATEGORIES:
+                turn_dict[f"p1_move_category_{c}"] = int(c == turn_dict["p1_move_category"])
+                turn_dict[f"p2_move_category_{c}"] = int(c == turn_dict["p2_move_category"])
+
+            turn_dict.pop("p1_move_category", None)
+            turn_dict.pop("p2_move_category", None)
+
+            # One-hot weather
+            for w in WEATHER:
+                turn_dict[f"weather_{w}"] = int(w == turn_dict["weather"])
+
+            turn_dict.pop("weather", None)
+
+            # One-hot status
+            keys_to_ohe = []
+            for key in slot_features.keys():
+                if 'status' in key:
+                    keys_to_ohe.append(key)
+
+            for key in keys_to_ohe:
+                for s in STATUS_EFFECTS:
+                    slot_features[f"{key}_{s}"] = int(s == slot_features[key])
+
+                slot_features.pop(key, None)
+        
 
             # ---------------------------
             # Final row = slot features + turn metadata
             # ---------------------------
-            row = {**slot_features, **turn_dict}
+            row = {**slot_features, **turn_dict, **self.meta[game_id]['poke_boosts']}
 
-            # DIMENSIONALITY CALC:
-            # POKEMON: ((17 types + 6 stats + 1 active/inactive) * 12 pokemon) = 288
-            # MOVES: ((17 types + 2 categories + 4 numerical stats (acc, power, pp, switch)) * 2 moves) = 46
+            # DIMENSIONALITY CALC: Will always have this many columns
+            # POKEMON: ((17 types + 6 stats + 6 status + 1 active/inactive) * 12 pokemon) = 360
+            # BOOSTS: (8 stats * 2 pokemon) = 16
+            # MOVES: ((17 types + 3 categories + 4 numerical stats (acc, power, pp, switch)) * 2 moves) = 48
             # WEATHER: 4 types
             # MISC: turn value + game id + who won
-            # TOTAL DIMS: 288 + 46 + 4 + 3 = 341
+            # TOTAL DIMS: 360 + 16 + 48 + 4 + 3 = 360 + 67 = 431
 
             row['turn'] = turn_num
 
@@ -356,16 +493,9 @@ class GameParser():
         # Concatenate everything into one global DF
         full_df = pd.concat(all_dfs, ignore_index=True)
 
-        full_df = pd.get_dummies(
-            full_df,
-            columns=[
-                "p1_move_type", "p2_move_type",
-                "p1_move_category", "p2_move_category",
-                "weather"
-            ],
-            prefix_sep="_",
-            dtype=int  # forces 0/1 instead of True/False
-        )
+        full_df = full_df.drop(columns=[col for col in full_df.columns if "None" in col])
+
+        full_df.to_csv('results.csv')
 
         print(full_df.shape)
 
