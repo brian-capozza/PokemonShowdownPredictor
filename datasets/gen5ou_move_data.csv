@@ -1,0 +1,247 @@
+,pokemon,move_1,pct_1,move_2,pct_2,move_3,pct_3,move_4,pct_4
+0,Thundurus-Therian,Thunder,26.03,Hidden Power,23.0,Focus Blast,18.53,Agility,8.49
+1,Hippowdon,Stealth Rock,34.07,Slack Off,21.51,Earthquake,20.31,Whirlwind,12.47
+2,Weavile,Ice Shard,24.71,Pursuit,20.11,Night Slash,17.24,Low Kick,15.52
+3,Jirachi,U-turn,17.09,Iron Head,13.54,Stealth Rock,12.49,Thunder,9.59
+4,Gliscor,Protect,24.28,Earthquake,19.98,Stealth Rock,10.93,Swords Dance,6.63
+5,Rotom-Wash,Volt Switch,34.83,Hydro Pump,22.16,Will-O-Wisp,21.39,Pain Split,9.61
+6,Landorus-Therian,U-turn,30.33,Earthquake,24.08,Stealth Rock,18.07,Hidden Power,15.34
+7,Ferrothorn,Stealth Rock,21.48,Spikes,20.0,Power Whip,14.86,Leech Seed,13.27
+8,Excadrill,Earthquake,28.26,Rapid Spin,22.48,Iron Head,21.76,Protect,8.2
+9,Celebi,Recover,19.22,Psychic,13.37,Baton Pass,12.16,Giga Drain,9.27
+10,Xatu,U-turn,23.69,Roost,17.54,Night Shade,14.46,Reflect,12.92
+11,Slowking,Scald,29.17,Slack Off,17.08,Psyshock,11.67,Thunder Wave,9.58
+12,Keldeo,Secret Sword,26.58,Scald,15.41,Surf,12.61,Hydro Pump,12.23
+13,Tyranitar,Crunch,26.55,Pursuit,24.11,Stealth Rock,12.95,Superpower,8.37
+14,Starmie,Rapid Spin,24.36,Hydro Pump,18.39,Ice Beam,15.36,Thunder,8.71
+15,Skarmory,Spikes,30.66,Stealth Rock,17.13,Roost,15.28,Whirlwind,14.73
+16,Volcarona,Quiver Dance,34.17,Bug Buzz,21.82,Fire Blast,9.92,Giga Drain,8.24
+17,Clefable,Thunder Wave,20.95,Knock Off,20.95,Seismic Toss,19.45,Soft-Boiled,18.45
+18,Jellicent,Will-O-Wisp,25.56,Recover,19.67,Taunt,11.91,Scald,11.6
+19,Latios,Draco Meteor,30.89,Surf,22.77,Trick,10.12,Dragon Pulse,9.21
+20,Dragonite,Dragon Dance,25.64,Outrage,20.86,Extreme Speed,16.79,Fire Punch,7.9
+21,Politoed,Scald,26.83,Protect,16.18,Hydro Pump,11.17,Toxic,9.86
+22,Tentacruel,Scald,27.76,Rapid Spin,23.92,Protect,22.94,Toxic,10.76
+23,Aerodactyl,Stealth Rock,39.66,Taunt,21.12,Double-Edge,9.91,Earthquake,9.48
+24,Garchomp,Outrage,22.85,Earthquake,22.14,Stealth Rock,16.7,Swords Dance,11.3
+25,Scizor,Bullet Punch,32.16,U-turn,23.9,Swords Dance,12.57,Superpower,12.33
+26,Donphan,Stealth Rock,29.35,Rapid Spin,23.9,Ice Shard,22.86,Earthquake,16.88
+27,Blissey,Seismic Toss,22.95,Soft-Boiled,18.92,Stealth Rock,17.11,Thunder Wave,12.1
+28,Cresselia,Ice Beam,25.79,Moonlight,17.19,Thunder Wave,12.03,Psyshock,9.17
+29,Victini,V-create,40.44,U-turn,25.14,Bolt Strike,14.75,Brick Break,3.83
+30,Ninetales,Will-O-Wisp,29.4,Flamethrower,20.17,Protect,13.85,Fire Blast,6.15
+31,Kyurem-Black,Outrage,27.0,Fusion Bolt,19.73,Ice Beam,13.74,Substitute,12.54
+32,Magnezone,Hidden Power,27.09,Thunderbolt,17.79,Flash Cannon,13.9,Substitute,9.01
+33,Alakazam,Psychic,20.82,Focus Blast,20.03,Hidden Power,19.9,Shadow Ball,11.39
+34,Reuniclus,Calm Mind,17.74,Recover,15.8,Focus Blast,15.63,Psyshock,12.17
+35,Heatran,Lava Plume,14.7,Protect,13.07,Stealth Rock,12.17,Magma Storm,11.53
+36,Chansey,Soft-Boiled,25.52,Seismic Toss,25.26,Stealth Rock,20.1,Toxic,14.05
+37,Kyurem,Ice Beam,18.67,Earth Power,17.17,Substitute,17.17,Blizzard,12.95
+38,Abomasnow,Blizzard,23.54,Ice Shard,18.38,Wood Hammer,14.48,Protect,13.79
+39,Mamoswine,Ice Shard,31.19,Earthquake,25.05,Icicle Crash,16.39,Stealth Rock,10.8
+40,Breloom,Mach Punch,19.18,Bullet Seed,15.89,Spore,10.99,Low Sweep,9.81
+41,Terrakion,Close Combat,37.84,Stone Edge,23.82,Stealth Rock,10.36,Quick Attack,4.93
+42,Empoleon,Stealth Rock,17.29,Surf,15.79,Ice Beam,15.04,Agility,12.03
+43,Slowbro,Scald,32.29,Slack Off,22.1,Ice Beam,18.41,Thunder Wave,6.52
+44,Amoonguss,Giga Drain,26.17,Stun Spore,21.65,Spore,19.25,Hidden Power,15.79
+45,Zapdos,Hidden Power,20.68,Heat Wave,20.68,Roost,19.44,Volt Switch,11.73
+46,Conkeldurr,Drain Punch,29.72,Mach Punch,22.95,Ice Punch,18.77,Bulk Up,10.85
+47,Gyarados,Dragon Dance,29.19,Waterfall,28.57,Substitute,12.81,Bounce,11.21
+48,Forretress,Rapid Spin,25.0,Spikes,21.84,Stealth Rock,16.23,Volt Switch,11.32
+49,Feraligatr,Waterfall,30.77,Swords Dance,28.21,Aqua Jet,28.21,Crunch,7.69
+50,Quagsire,Recover,30.54,Scald,20.36,Earthquake,14.37,Toxic,8.38
+51,Latias,Draco Meteor,15.36,Dragon Pulse,12.19,Surf,11.0,Calm Mind,9.61
+52,Hydreigon,Draco Meteor,26.37,Dark Pulse,19.35,Fire Blast,13.18,Flamethrower,8.39
+53,Milotic,Scald,33.33,Recover,23.96,Ice Beam,13.54,Toxic,9.38
+54,Seismitoad,Stealth Rock,31.65,Scald,28.48,Protect,15.51,Refresh,9.81
+55,Sharpedo,Waterfall,29.63,Protect,27.78,Crunch,25.93,Zen Headbutt,3.7
+56,Salamence,Outrage,34.97,Earthquake,13.68,Dragon Dance,12.84,Dragon Claw,9.8
+57,Azelf,Stealth Rock,33.77,Explosion,12.79,Taunt,10.49,U-turn,7.87
+58,Sableye,Will-O-Wisp,30.1,Taunt,20.39,Recover,19.9,Foul Play,13.59
+59,Lucario,Close Combat,29.85,Extreme Speed,28.64,Swords Dance,24.27,Ice Punch,6.55
+60,Gengar,Shadow Ball,32.83,Focus Blast,20.98,Substitute,13.03,Will-O-Wisp,6.6
+61,Probopass,Thunder Wave,23.08,Taunt,23.08,Earth Power,15.38,Protect,7.69
+62,Vaporeon,Scald,31.94,Rest,21.3,Roar,12.96,Acid Armor,11.11
+63,Virizion,Calm Mind,17.91,Leaf Blade,16.42,Focus Blast,14.93,Close Combat,13.43
+64,Keldeo-Resolute,Secret Sword,26.23,Surf,17.25,Hydro Pump,15.85,Hidden Power,12.48
+65,Ditto,Stealth Rock,7.14,Spikes,7.14,Roost,7.14,U-turn,5.36
+66,Rotom,Hidden Power,25.0,Volt Switch,20.83,Will-O-Wisp,16.67,Trick,12.5
+67,Mienshao,U-turn,34.02,High Jump Kick,33.51,Hidden Power,12.37,Fake Out,8.25
+68,Swampert,Stealth Rock,18.42,Ice Punch,15.79,Scald,13.16,Earthquake,13.16
+69,Roserade,Giga Drain,16.67,Spikes,13.89,Rest,12.5,Toxic Spikes,12.5
+70,Mandibuzz,Roost,26.98,U-turn,17.46,Foul Play,14.29,Toxic,11.11
+71,Mew,Taunt,15.96,Will-O-Wisp,12.22,Stealth Rock,10.47,Soft-Boiled,6.98
+72,Scrafty,Drain Punch,27.03,Dragon Dance,20.72,Ice Punch,17.12,Crunch,17.12
+73,Gastrodon,Scald,30.15,Recover,21.08,Ice Beam,15.69,Toxic,14.71
+74,Omastar,Shell Smash,32.0,Ice Beam,24.0,Surf,20.0,Hidden Power,13.33
+75,Tornadus,Hurricane,44.55,U-turn,17.63,Focus Blast,11.22,Tailwind,10.9
+76,Cloyster,Shell Smash,32.86,Icicle Spear,30.99,Ice Shard,15.49,Rock Blast,15.02
+77,Metagross,Stealth Rock,16.86,Meteor Mash,15.29,Earthquake,12.55,Ice Punch,9.8
+78,Toxicroak,Drain Punch,22.22,Sucker Punch,19.58,Ice Punch,14.81,Substitute,14.46
+79,Shedinja,X-Scissor,21.28,Shadow Sneak,14.89,Swords Dance,12.77,Protect,10.64
+80,Bronzong,Stealth Rock,21.66,Trick Room,17.68,Gyro Ball,13.22,Explosion,11.78
+81,Stoutland,Return,38.46,Superpower,30.77,Wild Charge,15.38,Pursuit,7.69
+82,Azumarill,Aqua Jet,42.31,Waterfall,19.23,Superpower,17.95,Ice Punch,8.97
+83,Espeon,Reflect,17.21,Light Screen,16.74,Baton Pass,11.16,Psychic,9.77
+84,Bisharp,Sucker Punch,34.47,Pursuit,17.48,Swords Dance,16.02,Low Kick,13.11
+85,Uxie,Reflect,23.53,Light Screen,19.12,Memento,19.12,Thunder Wave,17.65
+86,Haxorus,Outrage,29.01,Dragon Dance,20.61,Earthquake,16.79,Superpower,9.92
+87,Gastrodon-East,Scald,34.15,Recover,23.58,Toxic,18.7,Ice Beam,10.57
+88,Lapras,Curse,28.89,Ice Shard,22.22,Rest,17.78,Waterfall,17.78
+89,Cofagrigus,Shadow Ball,18.92,Will-O-Wisp,17.57,Trick Room,13.51,Knock Off,10.81
+90,Kingdra,Draco Meteor,20.93,Surf,16.28,Hydro Pump,15.12,Dragon Pulse,13.95
+91,Sceptile,Hidden Power,18.75,Giga Drain,18.75,Swords Dance,18.75,Leaf Blade,12.5
+92,Porygon2,Ice Beam,22.05,Recover,20.47,Trick Room,14.17,Hidden Power,7.87
+93,Raikou,Hidden Power,24.24,Thunderbolt,22.22,Volt Switch,16.16,Calm Mind,10.1
+94,Meloetta,Calm Mind,15.07,Shadow Ball,15.07,Relic Song,13.7,Focus Blast,13.7
+95,Scyther,U-turn,44.78,Aerial Ace,38.81,Pursuit,13.43,Brick Break,2.99
+96,Crobat,Heat Wave,23.53,U-turn,23.53,Brave Bird,17.65,Nasty Plot,11.76
+97,Tangrowth,Hidden Power,23.29,Sleep Powder,15.75,Giga Drain,15.07,Stun Spore,13.01
+98,Scolipede,Spikes,26.47,Endeavor,23.53,Toxic Spikes,20.59,Megahorn,14.71
+99,Poliwrath,Circle Throw,23.08,Scald,23.08,Rest,15.38,Sleep Talk,15.38
+100,Alomomola,Wish,27.87,Toxic,22.95,Protect,19.67,Scald,14.75
+101,Infernape,Close Combat,24.19,Stealth Rock,19.35,Overheat,8.06,U-turn,7.66
+102,Rotom-Heat,Overheat,36.0,Volt Switch,24.0,Hidden Power,20.0,Pain Split,12.0
+103,Machamp,Dynamic Punch,47.76,Ice Punch,22.39,Stone Edge,8.96,Thunder Punch,7.46
+104,Moltres,Hurricane,35.56,Substitute,13.33,Will-O-Wisp,12.22,Roost,11.11
+105,Heracross,Close Combat,50.0,Megahorn,23.33,Swords Dance,6.67,Night Slash,6.67
+106,Staraptor,Brave Bird,50.0,U-turn,19.44,Close Combat,11.11,Final Gambit,11.11
+107,Magneton,Hidden Power,34.38,Flash Cannon,25.0,Thunderbolt,21.88,Volt Switch,15.62
+108,Golurk,Dynamic Punch,23.08,Earthquake,23.08,Ice Punch,15.38,Stealth Rock,11.54
+109,Dusclops,Will-O-Wisp,23.08,Night Shade,18.46,Trick Room,13.85,Pain Split,13.85
+110,Crawdaunt,Crunch,29.41,Surf,14.71,Crabhammer,11.76,Ice Beam,11.76
+111,Marowak,Double-Edge,26.67,Fire Punch,26.67,Stone Edge,20.0,Bonemerang,20.0
+112,Froslass,Spikes,44.44,Destiny Bond,22.22,Taunt,15.87,Ice Beam,4.76
+113,Gorebyss,Shell Smash,34.78,Baton Pass,17.39,Hydro Pump,13.04,Surf,8.7
+114,Wobbuffet,Encore,33.33,Counter,26.67,Mirror Coat,16.67,Safeguard,10.0
+115,Diglett,Stealth Rock,40.54,Earthquake,32.43,Reversal,21.62,Toxic,2.7
+116,Gallade,Ice Punch,28.3,Close Combat,28.3,Leaf Blade,16.98,Trick Room,15.09
+117,Arcanine,Flare Blitz,44.0,Extreme Speed,16.0,Wild Charge,16.0,Morning Sun,8.0
+118,Primeape,Thunder,100.0,,,,,,
+119,Sigilyph,Psycho Shift,16.25,Roost,15.0,Ice Beam,15.0,Cosmic Power,12.5
+120,Rotom-Mow,Volt Switch,25.0,Leaf Storm,25.0,Hidden Power,20.0,Trick,10.0
+121,Togekiss,Air Slash,40.0,Nasty Plot,20.0,Roost,12.0,Thunder Wave,6.0
+122,Dugtrio,Earthquake,40.38,Stealth Rock,23.08,Reversal,9.62,Memento,7.69
+123,Gothitelle,Trick,28.0,Thunderbolt,18.67,Psyshock,16.0,Hidden Power,14.67
+124,Cobalion,Hidden Power,31.03,Stealth Rock,27.59,Volt Switch,10.34,Close Combat,10.34
+125,Suicune,Scald,16.67,Calm Mind,14.58,Ice Beam,10.42,Protect,9.38
+126,Druddigon,Glare,29.41,Outrage,29.41,Stealth Rock,17.65,Fire Punch,17.65
+127,Honchkrow,Brave Bird,30.77,Sucker Punch,26.92,Pursuit,21.15,Night Slash,7.69
+128,Hitmontop,Rapid Spin,37.65,High Jump Kick,15.29,Sucker Punch,12.94,Toxic,11.76
+129,Garbodor,Explosion,100.0,,,,,,
+130,Krookodile,Crunch,50.0,Superpower,16.67,Earthquake,16.67,Pursuit,16.67
+131,Chandelure,Shadow Ball,32.63,Fire Blast,23.16,Trick Room,11.58,Energy Ball,9.47
+132,Umbreon,Wish,35.38,Protect,23.08,Heal Bell,12.31,Toxic,10.77
+133,Archeops,Stealth Rock,36.67,Endeavor,20.0,Tailwind,20.0,Taunt,16.67
+134,Jolteon,Volt Switch,28.57,Hidden Power,23.81,Thunder,21.43,Thunderbolt,8.33
+135,Venusaur,Giga Drain,22.86,Hidden Power,20.0,Leech Seed,11.43,Sleep Powder,11.43
+136,Darmanitan,Flare Blitz,48.35,U-turn,30.77,Superpower,13.19,Fire Punch,2.2
+137,Sunflora,Hidden Power,66.67,Earth Power,33.33,,,,
+138,Smeargle,Spikes,13.33,Glare,13.33,Stealth Rock,13.33,Shell Smash,6.67
+139,Blastoise,Scald,34.21,Rapid Spin,26.32,Protect,18.42,Toxic,15.79
+140,Ninjask,Substitute,30.0,Baton Pass,30.0,Protect,20.0,Swords Dance,20.0
+141,Regirock,Rest,33.33,Stone Edge,16.67,Curse,16.67,Sleep Talk,16.67
+142,Mr. Mime,Barrier,100.0,,,,,,
+143,Escavalier,Pursuit,50.0,Megahorn,50.0,,,,
+144,Kadabra,Psyshock,100.0,,,,,,
+145,Mesprit,Trick Room,26.92,U-turn,26.92,Ice Beam,15.38,Healing Wish,15.38
+146,Rhyperior,Earthquake,44.0,Substitute,12.0,Ice Punch,12.0,Stone Edge,12.0
+147,Zoroark,Focus Blast,25.0,Dark Pulse,16.67,Sucker Punch,16.67,Hidden Power,12.5
+148,Throh,Bulk Up,25.0,Ice Punch,25.0,Thunder Punch,25.0,Low Kick,12.5
+149,Rapidash,Sunny Day,33.33,Hidden Power,33.33,Fire Blast,33.33,,
+150,Nidoqueen,Earth Power,26.32,Ice Beam,26.32,Flamethrower,21.05,Sludge Wave,15.79
+151,Liepard,Assist,15.0,Roar,15.0,Substitute,15.0,Dark Pulse,10.0
+152,Spiritomb,Pursuit,25.0,Sucker Punch,21.43,Shadow Sneak,10.71,Pain Split,7.14
+153,Parasect,X-Scissor,50.0,Spore,25.0,Stun Spore,25.0,,
+154,Cryogonal,Ice Beam,28.57,Toxic,28.57,Rapid Spin,14.29,Recover,14.29
+155,Hariyama,Close Combat,45.45,Ice Punch,27.27,Thunder Punch,9.09,Fire Punch,9.09
+156,Flygon,U-turn,40.74,Earthquake,22.22,Outrage,22.22,Hidden Power,3.7
+157,Gardevoir,Substitute,11.11,Calm Mind,11.11,Thunderbolt,11.11,Psychic,11.11
+158,Lanturn,Scald,13.56,Volt Switch,11.86,Thunder Wave,10.17,Toxic,8.47
+159,Yanmega,Bug Buzz,39.29,Protect,28.57,Hidden Power,14.29,Air Slash,14.29
+160,Floatzel,Waterfall,33.33,Taunt,16.67,Switcheroo,16.67,Ice Punch,16.67
+161,Venomoth,Disable,14.29,Sleep Powder,14.29,U-turn,14.29,Stun Spore,14.29
+162,Whimsicott,Stun Spore,15.79,Encore,15.79,Memento,10.53,Substitute,10.53
+163,Shaymin,Hidden Power,28.57,Seed Flare,25.0,Earth Power,14.29,Leech Seed,7.14
+164,Ambipom,Fake Out,50.0,U-turn,33.33,Ice Punch,8.33,Return,8.33
+165,Walrein,Protect,20.0,Blizzard,16.0,Substitute,16.0,Toxic,12.0
+166,Shuckle,Rollout,50.0,Protect,50.0,,,,
+167,Shelmet,Encore,100.0,,,,,,
+168,Riolu,Roar,35.62,Copycat,32.88,Drain Punch,10.96,Earthquake,4.11
+169,Rotom-Frost,Volt Switch,50.0,Blizzard,50.0,,,,
+170,Ludicolo,Leech Seed,20.0,Protect,20.0,Scald,10.0,Substitute,10.0
+171,Serperior,Giga Drain,50.0,Glare,37.5,Calm Mind,12.5,,
+172,Ursaring,Facade,50.0,Fire Punch,25.0,Close Combat,25.0,,
+173,Duosion,Recover,100.0,,,,,,
+174,Lombre,Scald,100.0,,,,,,
+175,Houndoom,Fire Blast,50.0,Sucker Punch,50.0,,,,
+176,Snorlax,Body Slam,29.17,Curse,20.83,Sleep Talk,8.33,Fire Punch,8.33
+177,Absol,Superpower,33.33,Sucker Punch,33.33,Ice Beam,11.11,Swords Dance,11.11
+178,Sawsbuck,Horn Leech,30.0,Nature Power,20.0,Earthquake,20.0,Swords Dance,10.0
+179,Pelipper,Hurricane,20.0,U-turn,20.0,Hydro Pump,10.0,Scald,10.0
+180,Lilligant,Quiver Dance,26.09,Sleep Powder,26.09,Giga Drain,17.39,Hidden Power,17.39
+181,Weezing,Will-O-Wisp,100.0,,,,,,
+182,Eelektross,Thunderbolt,33.33,Flamethrower,22.22,Hidden Power,11.11,Superpower,11.11
+183,Banette,Pursuit,40.0,Shadow Sneak,20.0,Will-O-Wisp,20.0,Shadow Claw,20.0
+184,Claydol,Rapid Spin,30.77,Earthquake,23.08,Stealth Rock,15.38,Psychic,15.38
+185,Registeel,Stealth Rock,36.84,Seismic Toss,15.79,Earthquake,15.79,Thunder Wave,15.79
+186,Nidoking,Earth Power,31.25,Thunder,18.75,Ice Beam,12.5,Substitute,12.5
+187,Camerupt,Stealth Rock,50.0,Lava Plume,50.0,,,,
+188,Pikachu,Flamethrower,33.33,Low Kick,33.33,Sucker Punch,33.33,,
+189,Galvantula,Hidden Power,100.0,,,,,,
+190,Sawk,Ice Punch,33.33,Stone Edge,33.33,Close Combat,16.67,Reversal,16.67
+191,Hitmonlee,Close Combat,41.67,Fling,25.0,Stone Edge,16.67,Earthquake,8.33
+192,Cradily,Recover,33.33,Seed Bomb,33.33,Curse,33.33,,
+193,Slaking,Earthquake,36.36,Fire Punch,18.18,Return,18.18,Hammer Arm,9.09
+194,Porygon-Z,Tri Attack,42.11,Trick,21.05,Hidden Power,15.79,Ice Beam,5.26
+195,Exeggutor,Giga Drain,28.57,Leech Seed,14.29,Protect,14.29,Substitute,14.29
+196,Shiftry,Seed Bomb,35.0,Low Kick,30.0,Growth,20.0,Sucker Punch,15.0
+197,Carracosta,Shell Smash,33.33,Stone Edge,33.33,Waterfall,33.33,,
+198,Kabutops,Waterfall,30.0,Stone Edge,30.0,Swords Dance,20.0,Low Kick,10.0
+199,Lickilicky,Fire Blast,40.0,Thunderbolt,20.0,Focus Blast,20.0,Ice Beam,20.0
+200,Medicham,Ice Punch,40.0,High Jump Kick,40.0,Fake Out,20.0,,
+201,Aggron,Head Smash,100.0,,,,,,
+202,Octillery,Water Spout,100.0,,,,,,
+203,Whiscash,Dragon Dance,25.0,Earthquake,25.0,Rest,25.0,Waterfall,25.0
+204,Sandslash,Earthquake,44.44,Stone Edge,22.22,Night Slash,11.11,Stealth Rock,11.11
+205,Jynx,Ice Beam,30.0,Heal Bell,10.0,Light Screen,10.0,Reflect,10.0
+206,Dusknoir,Trick,20.0,Curse,20.0,Shadow Sneak,20.0,Ice Punch,20.0
+207,Charizard,Fire Blast,25.0,Fire Punch,16.67,Flamethrower,16.67,Air Slash,16.67
+208,Cinccino,Bullet Seed,33.33,Rock Blast,33.33,Tail Slap,33.33,,
+209,Dodrio,Pursuit,50.0,Brave Bird,50.0,,,,
+210,Sudowoodo,Stealth Rock,100.0,,,,,,
+211,Golduck,Ice Beam,100.0,,,,,,
+212,Steelix,Stealth Rock,50.0,Gyro Ball,50.0,,,,
+213,Victreebel,Weather Ball,38.89,Solar Beam,22.22,Hidden Power,16.67,Growth,16.67
+214,Zangoose,Close Combat,25.0,Quick Attack,25.0,Shadow Claw,25.0,Ice Punch,25.0
+215,Klinklang,Flamethrower,20.0,Dark Pulse,20.0,Shift Gear,20.0,Gear Grind,20.0
+216,Samurott,Swords Dance,12.5,Megahorn,12.5,Razor Shell,12.5,Aqua Jet,12.5
+217,Vanilluxe,Ice Beam,50.0,Hidden Power,50.0,,,,
+218,Lumineon,Surf,100.0,,,,,,
+219,Volbeat,Substitute,28.57,Baton Pass,28.57,Rain Dance,14.29,Encore,14.29
+220,Tropius,Substitute,25.0,Air Slash,25.0,Protect,25.0,Roost,25.0
+221,Butterfree,Bug Buzz,40.0,Quiver Dance,20.0,Sleep Powder,20.0,Hidden Power,20.0
+222,Regice,Ice Beam,50.0,Thunderbolt,25.0,Rest,25.0,,
+223,Onix,Stealth Rock,50.0,Explosion,50.0,,,,
+224,Kangaskhan,Body Slam,100.0,,,,,,
+225,Torterra,Leech Seed,50.0,Wood Hammer,50.0,,,,
+226,Accelgor,U-turn,33.33,Bug Buzz,33.33,Final Gambit,33.33,,
+227,Hitmonchan,Ice Punch,100.0,,,,,,
+228,Durant,Stone Edge,100.0,,,,,,
+229,Rampardos,Earthquake,100.0,,,,,,
+230,Mawile,Flamethrower,50.0,Sucker Punch,50.0,,,,
+231,Murkrow,Thunder Wave,33.33,Roost,33.33,Taunt,33.33,,
+232,Spinda,Superpower,50.0,Sucker Punch,50.0,,,,
+233,Typhlosion,Overheat,50.0,Extrasensory,50.0,,,,
+234,Cacturne,Sucker Punch,25.0,Substitute,25.0,Swords Dance,25.0,Drain Punch,25.0
+235,Altaria,Cotton Guard,50.0,Dragon Dance,50.0,,,,
+236,Swanna,Stealth Rock,25.0,Hurricane,25.0,Brine,25.0,Ice Beam,25.0
+237,Koffing,Memento,100.0,,,,,,
+238,Basculin,Waterfall,100.0,,,,,,
+239,Electivire,Ice Punch,100.0,,,,,,
+240,Swellow,Facade,100.0,,,,,,
+241,Articuno,Ice Beam,100.0,,,,,,
+242,Miltank,Stealth Rock,33.33,Seismic Toss,33.33,Heal Bell,33.33,,
+243,Torkoal,Will-O-Wisp,100.0,,,,,,
+244,Rhydon,Rock Polish,20.0,Fire Punch,20.0,Earthquake,20.0,Stealth Rock,20.0
+245,Drapion,Crunch,50.0,Toxic Spikes,50.0,,,,
