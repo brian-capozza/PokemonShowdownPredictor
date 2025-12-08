@@ -134,16 +134,6 @@ class FeatureEngineering:
 
             df["cumulative_remaining_advantage"] = df.groupby("game_id")["remaining_diff"].cumsum()
 
-            # --- Turn number (safe), but NO game_progress ---
-            df["turn_number"] = df.groupby("game_id").cumcount() + 1
-
-            # --- Active HP percentage and fainted counts (instantaneous) ---
-            den_p1_hp = self._active_stat(df, "p1", "hp") + 1e-6
-            den_p2_hp = self._active_stat(df, "p2", "hp") + 1e-6
-            df["p1_active_hp_pct"] = df["p1_active_hp"] / den_p1_hp
-            df["p2_active_hp_pct"] = df["p2_active_hp"] / den_p2_hp
-            df["active_hp_pct_diff"] = df["p1_active_hp_pct"] - df["p2_active_hp_pct"]
-
             df["p1_fainted"] = 6 - df["p1_remaining"]
             df["p2_fainted"] = 6 - df["p2_remaining"]
 
