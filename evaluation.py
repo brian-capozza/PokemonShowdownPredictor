@@ -1,10 +1,27 @@
 import torch
-
 import numpy as np
-
 import matplotlib.pyplot as plt
-
+import matplotlib as mpl
 from sklearn.metrics import precision_score, recall_score, f1_score
+
+def set_pokemon_theme():
+    mpl.rcParams.update({
+        "figure.facecolor": "#FAF9F6",
+        "axes.facecolor": "#FAF9F6",
+        "axes.edgecolor": "#1A1A1A",
+        "axes.labelcolor": "#1A1A1A",
+        "xtick.color": "#1A1A1A",
+        "ytick.color": "#1A1A1A",
+        "grid.color": "#D0D0D0",
+        "font.size": 12,
+        "font.family": "DejaVu Sans",
+        "axes.titleweight": "bold",
+        "axes.titlesize": 16,
+        "lines.linewidth": 2.5,
+        "savefig.facecolor": "#FAF9F6",
+        "savefig.edgecolor": "#FAF9F6",
+    })
+
 
 class ModelEvaluation:
     def __init__(self, model, criterion, optimizer, device):
@@ -12,41 +29,128 @@ class ModelEvaluation:
         self.criterion = criterion
         self.optimizer = optimizer
         self.device = device
+        self.seq_builder = None  # optional, only needed for seq curriculum / padding
 
+    # ----------- small helper: handle (x,y) vs (x,lengths,y) ----------
+    def _unpack_batch(self, batch):
+        """
+        Supports:
+          - sequence loaders: (x, lengths, y)
+          - flat loaders:     (x, y)
+        """
+        if len(batch) == 3:
+            x, lengths, y = batch
+        elif len(batch) == 2:
+            x, y = batch
+            # dummy lengths = 1 so weighting logic still works
+            lengths = torch.ones(len(y), dtype=torch.long, device=x.device)
+        else:
+            raise ValueError(f"Unexpected batch format with len={len(batch)}")
 
+        return x, lengths, y
+
+    # ----------- forward wrapper for both LSTM and MLP ----------
+    def _forward_model(self, x, lengths):
+        """
+        Universal forward handler.
+
+        - If model is an MLP (has .network) and x is [B, F]:
+              just call model(x)
+        - If model is an MLP and x is [B, T, F]:
+              use last-turn features (for sequence inputs)
+        - Else (LSTM / seq model):
+              call model(x, lengths) if possible
+        """
+        # MLP-style model
+        if hasattr(self.model, "network"):
+            if x.dim() == 2:
+                # Flat per-turn features [B, F]
+                return self.model(x)
+            elif x.dim() == 3:
+                # Sequence input [B, T, F] → last-turn features
+                B, T, F = x.shape
+                last = x[torch.arange(B, device=x.device), lengths - 1, :]  # [B, F]
+                return self.model(last)
+            else:
+                raise ValueError(f"Unexpected input dim for MLP: x.dim() = {x.dim()}")
+
+        # LSTM / other sequence model
+        try:
+            return self.model(x, lengths)
+        except TypeError:
+            return self.model(x)
+
+    # ----------- EVAL + LOSS ----------
     def _evaluate(self, loader):
         self.model.eval()
         correct = 0
         total = 0
         with torch.no_grad():
-            for x, lengths, y in loader:
+            for batch in loader:
+                x, lengths, y = self._unpack_batch(batch)
                 x, y = x.to(self.device), y.to(self.device)
-                logits = self.model(x, lengths)
+                logits = self._forward_model(x, lengths)
                 probs = torch.sigmoid(logits)
                 preds = (probs > 0.5).int()
                 correct += (preds == y.int()).sum().item()
                 total += len(y)
         return correct / total if total > 0 else 0.0
 
-
     def _evaluate_loss(self, loader):
         self.model.eval()
         total_loss = 0.0
         count = 0
         with torch.no_grad():
-            for x, lengths, y in loader:
+            for batch in loader:
+                x, lengths, y = self._unpack_batch(batch)
                 x, y = x.to(self.device), y.to(self.device)
-                logits = self.model(x, lengths)
+                logits = self._forward_model(x, lengths)
                 # Use true labels for validation loss (no smoothing)
                 sample_losses = self.criterion(logits, y)
                 total_loss += sample_losses.mean().item()
                 count += 1
         return total_loss / max(1, count)
 
+    def _evaluate_with_prefix(self, loader, prefix_frac=0.5):
+        """
+        Only really makes sense for sequence datasets.
+        For flat datasets (no lengths, no seqs) you wouldn't use this.
+        """
+        self.model.eval()
+        correct = 0
+        total = 0
+        with torch.no_grad():
+            for seqs, labels in loader.dataset:
+                seq_len = len(seqs)
+                prefix_len = max(1, int(prefix_frac * seq_len))
 
-    def train_and_evaluate(self, train_loader, val_loader, test_loader, seq_builder, epochs, prefix_min_start, prefix_min_end, label_smoothing, patience, grad_noise_std):
+                seq_prefix = seqs[:prefix_len].unsqueeze(0).to(self.device)
+                lengths = torch.tensor([prefix_len], dtype=torch.long).to(self.device)
+
+                logits = self._forward_model(seq_prefix, lengths)
+                pred = (torch.sigmoid(logits) > 0.5).int().item()
+                correct += (pred == labels.item())
+                total += 1
+
+        return correct / total if total > 0 else 0.0
+
+    # ----------- TRAINING LOOP ----------
+    def train_and_evaluate(
+        self,
+        train_loader,
+        val_loader,
+        test_loader,
+        seq_builder,             # can be None for flat dataset
+        epochs,
+        prefix_min_start,
+        prefix_min_end,
+        label_smoothing,
+        patience,
+        grad_noise_std,
+    ):
         self.test_loader = test_loader
-        
+        self.seq_builder = seq_builder  # may be None in flat setting
+
         best_val_loss = float("inf")
         self.best_val_acc_at_best_loss = 0.0
         patience_counter = 0
@@ -65,20 +169,24 @@ class ModelEvaluation:
             total_loss = 0.0
             batch_count = 0
 
-            # update prefix curriculum (module-level variable)
-            progress = (epoch - 1) / max(1, epochs - 1)
-            current_prefix_min_frac = (
-                prefix_min_start
-                + progress * (prefix_min_end - prefix_min_start)
-            )
-            seq_builder.set_prefix_frac(current_prefix_min_frac)
-            current_prefix_min_frac = float(np.clip(current_prefix_min_frac, 0.0, 1.0))
+            # update prefix curriculum only if we have a seq_builder
+            if self.seq_builder is not None:
+                progress = (epoch - 1) / max(1, epochs - 1)
+                current_prefix_min_frac = (
+                    prefix_min_start
+                    + progress * (prefix_min_end - prefix_min_start)
+                )
+                self.seq_builder.set_prefix_frac(current_prefix_min_frac)
+                current_prefix_min_frac = float(np.clip(current_prefix_min_frac, 0.0, 1.0))
+            else:
+                current_prefix_min_frac = 1.0  # full turns, but unused
 
-            for x, lengths, y in train_loader:
+            for batch in train_loader:
+                x, lengths, y = self._unpack_batch(batch)
                 x, y = x.to(self.device), y.to(self.device)
 
                 self.optimizer.zero_grad()
-                logits = self.model(x, lengths)
+                logits = self._forward_model(x, lengths)
 
                 # Label smoothing for training loss
                 if label_smoothing > 0.0:
@@ -88,8 +196,12 @@ class ModelEvaluation:
 
                 sample_losses = self.criterion(logits, y_smooth)
 
-                # Prefix-length-based weights (longer prefixes closer to full game)
-                w = (lengths.float() / lengths.max().float()).to(self.device)
+                # Prefix-length-based weights (for sequence datasets)
+                if lengths is not None and lengths.numel() > 0:
+                    w = (lengths.float() / lengths.max().float()).to(self.device)
+                else:
+                    w = torch.ones_like(sample_losses)
+
                 loss = (w * sample_losses).mean()
 
                 loss.backward()
@@ -133,7 +245,6 @@ class ModelEvaluation:
                     print(f"⚠ Early stop at epoch {epoch} (no val loss improvement)")
                     break
 
-
         state_dict = torch.load("best_model.pt", map_location=self.device)
         self.model.load_state_dict(state_dict)
 
@@ -147,19 +258,17 @@ class ModelEvaluation:
             f"Best Val Loss: {best_val_loss:.4f}"
         )
 
+    # ----------- FEATURE IMPORTANCE ----------
     def compute_feature_importance(self, test_loader, feature_names, num_batches=20):
         """
         Computes global feature importance by averaging gradients of the output
         with respect to the inputs across several batches.
+        Works for both sequence [B,T,F] and flat [B,F] inputs.
         """
 
-        # Store original mode
-        was_training = self.model.training  
-
-        # We need training mode for cuDNN RNN backward()
+        was_training = self.model.training
         self.model.train()
 
-        # Disable dropout and stochastic depth manually
         def disable_dropout(module):
             if isinstance(module, torch.nn.Dropout):
                 module.p = 0.0
@@ -168,18 +277,24 @@ class ModelEvaluation:
         importance = None
         batches_done = 0
 
-        for x, lengths, y in test_loader:
+        for batch in test_loader:
+            x, lengths, y = self._unpack_batch(batch)
             x = x.to(self.device).requires_grad_(True)
             lengths = lengths.to(self.device)
 
-            logits = self.model(x, lengths)
+            logits = self._forward_model(x, lengths)
             probs = torch.sigmoid(logits)
 
             loss = probs.mean()
             self.model.zero_grad()
             loss.backward()
 
-            grad = x.grad.detach().abs().mean(dim=(0, 1))  # [F]
+            if x.dim() == 3:
+                # [B, T, F] → average over B and T
+                grad = x.grad.detach().abs().mean(dim=(0, 1))  # [F]
+            else:
+                # [B, F] → average over B
+                grad = x.grad.detach().abs().mean(dim=0)       # [F]
 
             if importance is None:
                 importance = grad.cpu().numpy()
@@ -190,9 +305,8 @@ class ModelEvaluation:
             if batches_done >= num_batches:
                 break
 
-        importance /= batches_done
+        importance /= max(1, batches_done)
 
-        # Restore original mode
         if was_training:
             self.model.train()
         else:
@@ -200,9 +314,7 @@ class ModelEvaluation:
 
         return importance
 
-    
     def plot_feature_importance(self, importance, feature_names, top_k=30):
-        # Sort features by importance
         idx = np.argsort(importance)[::-1][:top_k]
         top_features = np.array(feature_names)[idx]
         top_values = importance[idx]
@@ -213,19 +325,20 @@ class ModelEvaluation:
         plt.title(f"Top {top_k} Most Important Features (Gradient-Based)")
         plt.xlabel("Importance")
         plt.tight_layout()
+        plt.savefig("feature_importance.png", dpi=250, bbox_inches="tight")
         plt.show()
 
-
-
+    # ----------- METRICS ----------
     def _compute_metrics(self, loader):
         self.model.eval()
         all_probs = []
         all_labels = []
 
         with torch.no_grad():
-            for x, lengths, y in loader:
+            for batch in loader:
+                x, lengths, y = self._unpack_batch(batch)
                 x, y = x.to(self.device), y.to(self.device)
-                logits = self.model(x, lengths)
+                logits = self._forward_model(x, lengths)
                 probs = torch.sigmoid(logits)
                 all_probs.extend(probs.cpu().numpy())
                 all_labels.extend(y.cpu().numpy())
@@ -241,164 +354,142 @@ class ModelEvaluation:
 
         return precision, recall, f1
 
-
+    # ----------- TRAINING CURVES ----------
     def visualize_training(self):
-        # =========================
-        # TRAINING HISTORY PLOTS
-        # =========================
+        set_pokemon_theme()
 
-        fig, (ax1, ax2) = plt.subplots(1, 2, figsize=(14, 5))
+        fig, (ax1, ax2) = plt.subplots(1, 2, figsize=(15, 5))
+
+        # Pokemon blue & yellow
+        blue = "#3B4CCA"
+        yellow = "#FFCB05"
 
         ax1.plot(self.history["epoch"], self.history["train_loss"], label="Train Loss",
-                linewidth=2.0, marker="o")
+                color=blue, marker="o")
         ax1.plot(self.history["epoch"], self.history["val_loss"], label="Val Loss",
-                linewidth=2.0, marker="s")
+                color=yellow, marker="s")
+        ax1.set_title("Training vs Validation Loss")
         ax1.set_xlabel("Epoch")
         ax1.set_ylabel("Loss")
-        ax1.set_title("Training vs Validation Loss")
-        ax1.grid(alpha=0.3)
+        ax1.grid(alpha=0.35)
         ax1.legend()
 
         ax2.plot(self.history["epoch"], self.history["train_acc"], label="Train Acc",
-                linewidth=2.0, marker="o")
+                color=blue, marker="o")
         ax2.plot(self.history["epoch"], self.history["val_acc"], label="Val Acc",
-                linewidth=2.0, marker="s")
-        ax2.axhline(self.best_val_acc_at_best_loss, linestyle="--", color="gray", alpha=0.6,
-                    label=f"Best Val Acc @ Best Loss ({self.best_val_acc_at_best_loss:.3f})")
+                color=yellow, marker="s")
+        ax2.axhline(self.best_val_acc_at_best_loss, linestyle="--", color="#1A1A1A", alpha=0.4,
+                    label=f"Best Val Acc ({self.best_val_acc_at_best_loss:.3f})")
+        ax2.set_title("Training vs Validation Accuracy")
         ax2.set_xlabel("Epoch")
         ax2.set_ylabel("Accuracy")
-        ax2.set_title("Train vs Val Accuracy")
-        ax2.set_ylim(0.4, 1.0)
-        ax2.grid(alpha=0.3)
+        ax2.grid(alpha=0.35)
         ax2.legend()
 
         plt.tight_layout()
-        plt.savefig("training_history.png", dpi=200, bbox_inches="tight")
+        plt.savefig("training_history.png", dpi=250, bbox_inches="tight")
         plt.show()
 
 
+    # ----------- WIN PROBABILITY CURVES ----------
     def visualize_games(self, game_test, test_seqs, test_labels):
-        print("\nGenerating win probability curves for sample test games...")
+        set_pokemon_theme()
+        print("\nGenerating Pokémon-style win probability curves...\n")
 
         self.model.eval()
-        test_game_ids_unique = game_test.unique()
+        ids = np.unique(game_test) if isinstance(game_test, np.ndarray) else game_test.unique()
 
         n_games = min(12, len(test_seqs))
-
-        # Smaller figure so subplots have consistent spacing
-        fig, axes = plt.subplots(3, 4, figsize=(18, 11))
+        fig, axes = plt.subplots(3, 4, figsize=(18, 12))
         axes = axes.flatten()
 
-        for idx in range(n_games):
-            seq = test_seqs[idx].unsqueeze(0).to(self.device)
-            true_label = test_labels[idx].item()
-            game_id = test_game_ids_unique[idx]
+        green = "#4CAF50"
+        red = "#CC0000"
+        hud_gray = "#3A3A3A"
 
-            T = seq.shape[1]
+        for idx in range(n_games):
+            seq = test_seqs[idx].to(self.device)
+            true_label = test_labels[idx].item()
+            game_id = ids[idx]
+            T = seq.shape[0]
+
             probs = []
             for t in range(1, T + 1):
                 with torch.no_grad():
-                    length_t = torch.tensor([t], dtype=torch.long).to(self.device)
-                    prob = torch.sigmoid(self.model(seq[:, :t, :], length_t)).item()
-                probs.append(prob)
+                    if hasattr(self.model, "network"):
+                        logits = self._forward_model(seq[t - 1].unsqueeze(0), None)
+                    else:
+                        logits = self._forward_model(seq[:t].unsqueeze(0), torch.tensor([t]))
+                probs.append(torch.sigmoid(logits).item())
 
             ax = axes[idx]
-            final_prob = probs[-1]
-            final_pred = final_prob > 0.5
-            correct = ((final_pred and true_label == 1) or ((not final_pred) and true_label == 0))
-            color = "#27AE60" if correct else "#E74C3C"
+            final = probs[-1]
+            correct = (final > 0.5) == (true_label == 1)
+            color = green if correct else red
 
-            # Plot main curve
-            ax.plot(probs, linewidth=1.5, color=color)
-            ax.axhline(0.5, color="gray", linestyle="--", alpha=0.5)
-            ax.fill_between(range(len(probs)), 0, probs, alpha=0.18, color=color)
+            # Pokémon HP-bar look
+            ax.plot(probs, color=color)
+            ax.fill_between(range(len(probs)), 0, probs, color=color, alpha=0.25)
+
+            # Gray dashed midline (Pokémon-style HUD)
+            ax.axhline(0.5, color=hud_gray, linestyle="--", alpha=0.5)
 
             winner = "P1" if true_label == 1 else "P2"
             status = "✓" if correct else "✗"
+            ax.set_title(f"Game {game_id} — Winner {winner} {status}\nFinal: {final:.2f}",
+                        fontsize=10, fontweight="bold")
 
-            # ---- Smaller, compressed 2-line title ----
-            title_text = (
-                f"Game {game_id} — Winner: {winner} {status}\n"
-                f"Pred: {final_prob:.2f}"
-            )
-
-            ax.set_title(title_text, fontsize=8, fontweight="bold")
-            ax.title.set_position((0.5, 1.15))  # Lift title upward
-
-            ax.set_xlabel("Turn", fontsize=8)
-            ax.set_ylabel("P1 Win Prob", fontsize=8)
-
+            ax.set_xlabel("Turn")
+            ax.set_ylabel("P1 Win Probability")
             ax.set_ylim(-0.05, 1.05)
-            ax.grid(alpha=0.25, linestyle=":")
+            ax.grid(alpha=0.25)
             ax.spines["top"].set_visible(False)
             ax.spines["right"].set_visible(False)
 
-            # Reduce tick label size
-            ax.tick_params(labelsize=8)
-
-        # ---- Global title ----
-        plt.suptitle(
-            "Win Probability Predictions (Green = Correct, Red = Incorrect)",
-            fontsize=16,
-            fontweight="bold",
-            y=1.02,
-        )
-
-        # ---- Spacing tuned to prevent any clipping ----
-        plt.subplots_adjust(
-            top=0.90,
-            bottom=0.08,
-            left=0.05,
-            right=0.98,
-            hspace=0.55,
-            wspace=0.25
-        )
-
-        plt.savefig("win_curves_grid.png", dpi=200, bbox_inches="tight")
+        plt.suptitle("Pokémon Win Probability Curves", fontsize=18, weight="bold")
+        plt.tight_layout(rect=(0, 0, 1, 0.95))
+        plt.savefig("win_curves_grid.png", dpi=250, bbox_inches="tight")
         plt.show()
 
 
+    # ----------- PRF BAR PLOT ----------
     def visualize_prf(self):
-        fig, ax = plt.subplots(figsize=(6, 5))
+        set_pokemon_theme()
+
+        fig, ax = plt.subplots(figsize=(7, 5))
 
         metrics = ["Precision", "Recall", "F1 Score"]
-        values = [
-            float(self.test_precision),
-            float(self.test_recall),
-            float(self.test_f1)
-        ]
+        values = [float(self.test_precision), float(self.test_recall), float(self.test_f1)]
 
-        bars = ax.bar(metrics, values, color=["#3498DB", "#E67E22", "#9B59B6"], alpha=0.85)
+        colors = ["#3B4CCA", "#FFCB05", "#CC0000"]  # blue, yellow, red
+
+        bars = ax.bar(metrics, values, color=colors, edgecolor="#1A1A1A", linewidth=1.5)
 
         for bar, val in zip(bars, values):
-            ax.text(bar.get_x() + bar.get_width() / 2,
-                    val + 0.02,
-                    f"{val:.3f}",
-                    ha="center",
-                    va="bottom",
-                    fontsize=10,
-                    fontweight="bold")
+            ax.text(bar.get_x() + bar.get_width()/2, val + 0.02,
+                    f"{val:.3f}", ha="center", fontsize=12,
+                    weight="bold")
 
         ax.set_ylim(0, 1.15)
-        ax.set_title("Precision, Recall, F1 Score (Test Set)", fontsize=14, fontweight="bold")
+        ax.set_title("Pokémon Model Performance Metrics", fontsize=16)
         ax.set_ylabel("Score")
-        ax.grid(axis="y", linestyle=":", alpha=0.4)
+        ax.grid(axis="y", alpha=0.3)
 
         plt.tight_layout()
-        plt.savefig("prf_metrics.png", dpi=200, bbox_inches="tight")
+        plt.savefig("prf_metrics.png", dpi=250, bbox_inches="tight")
         plt.show()
 
-
-
+    # ----------- SUMMARY / CALIBRATION ----------
     def summary(self):
         print("\nGenerating calibration and prediction distribution plots...")
 
         all_probs = []
         all_labels = []
         with torch.no_grad():
-            for x, lengths, y in self.test_loader:
+            for batch in self.test_loader:
+                x, lengths, y = self._unpack_batch(batch)
                 x, y = x.to(self.device), y.to(self.device)
-                logits = self.model(x, lengths)
+                logits = self._forward_model(x, lengths)
                 probs = torch.sigmoid(logits)
                 all_probs.extend(probs.cpu().numpy())
                 all_labels.extend(y.cpu().numpy())
@@ -417,9 +508,6 @@ class ModelEvaluation:
             if m.sum() > 0:
                 bin_probs.append(bin_centers[i])
                 bin_accs.append(all_labels[m].mean())
-        # =========================
-        # SUMMARY STATS
-        # =========================
 
         print("\n" + "=" * 60)
         print("MODEL PERFORMANCE SUMMARY")

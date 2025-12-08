@@ -7,8 +7,6 @@ import torch
 from torch.utils.data import Dataset, DataLoader
 from torch.nn.utils.rnn import (
     pad_sequence,
-    pack_padded_sequence,
-    pad_packed_sequence,
 )
 
 status_suffixes = [
@@ -25,8 +23,9 @@ move_types = [
 move_categories = ["Physical", "Special", "Status"]
 
 class FeatureEngineering:
-    def __init__(self, df: pd.DataFrame):
+    def __init__(self, df: pd.DataFrame, use_fe):
         self.df = df
+        self.use_fe = use_fe
     
 
     def _active_stat(self, df, side, stat):
@@ -82,124 +81,138 @@ class FeatureEngineering:
         
         print(f"Loaded {len(df)} turns across {df['game_id'].nunique()} games.")
 
-        print("Adding high-level momentum / advantage features (causal only)...")
+        if self.use_fe:
 
-        # --- Team HP totals and damage (instantaneous + diff to previous turn) ---
-        df["p1_team_hp_total"] = self._team_hp_total(df, "p1")
-        df["p2_team_hp_total"] = self._team_hp_total(df, "p2")
+            print("Adding features...")
 
-        # --- Remaining Pokémon (instantaneous) ---
-        df["p1_remaining"] = 0
-        df["p2_remaining"] = 0
-        for i in range(1, 7):
-            c1 = f"p1_slot{i}_current_health"
-            c2 = f"p2_slot{i}_current_health"
-            if c1 in df:
-                df["p1_remaining"] += (df[c1].fillna(0) > 0).astype(int)
-            if c2 in df:
-                df["p2_remaining"] += (df[c2].fillna(0) > 0).astype(int)
-        #df["remaining_diff"] = df["p1_remaining"] - df["p2_remaining"]
+            # --- Team HP totals and damage (instantaneous + diff to previous turn) ---
+            df["p1_team_hp_total"] = self._team_hp_total(df, "p1")
+            df["p2_team_hp_total"] = self._team_hp_total(df, "p2")
+            df["team_hp_total_diff"] = df["p1_team_hp_total"] - df["p2_team_hp_total"]
 
-        # --- Active HP and speed (instantaneous) ---
-        df["p1_active_hp"] = self._active_stat(df, "p1", "current_health")
-        df["p2_active_hp"] = self._active_stat(df, "p2", "current_health")
-        df["active_hp_diff"] = df["p1_active_hp"] - df["p2_active_hp"]
-
-        df["p1_active_speed"] = self._active_stat(df, "p1", "spe")
-        df["p2_active_speed"] = self._active_stat(df, "p2", "spe")
-        df["active_speed_diff"] = df["p1_active_speed"] - df["p2_active_speed"]
-
-        # --- Boosts (instantaneous) ---
-        p1_boost_cols = [c for c in df.columns if c.startswith("p1_") and c.endswith("_boost")]
-        p2_boost_cols = [c for c in df.columns if c.startswith("p2_") and c.endswith("_boost")]
-        df["p1_boost_sum"] = df[p1_boost_cols].fillna(0).sum(axis=1) if p1_boost_cols else 0
-        df["p2_boost_sum"] = df[p2_boost_cols].fillna(0).sum(axis=1) if p2_boost_cols else 0
-        df["boost_diff"] = df["p1_boost_sum"] - df["p2_boost_sum"]
-
-
-        df["p1_status_count"] = self._status_count(df, "p1")
-        df["p2_status_count"] = self._status_count(df, "p2")
-        df["status_count_diff"] = df["p1_status_count"] - df["p2_status_count"]
-
-        df["pokemon_lost_p1"] = (
-            df.groupby("game_id")["p1_remaining"]
-            .diff().fillna(0).clip(upper=0).abs()
-        )
-        df["pokemon_lost_p2"] = (
-            df.groupby("game_id")["p2_remaining"]
-            .diff().fillna(0).clip(upper=0).abs()
-        )
-        df["recent_ko_advantage"] = df["pokemon_lost_p2"] - df["pokemon_lost_p1"]
-
-        #df["cumulative_remaining_advantage"] = df.groupby("game_id")["remaining_diff"].cumsum()
-
-        # --- Turn number (safe), but NO game_progress ---
-        df["turn_number"] = df.groupby("game_id").cumcount() + 1
-
-        # --- Active HP percentage and fainted counts (instantaneous) ---
-        den_p1_hp = self._active_stat(df, "p1", "hp") + 1e-6
-        den_p2_hp = self._active_stat(df, "p2", "hp") + 1e-6
-        df["p1_active_hp_pct"] = df["p1_active_hp"] / den_p1_hp
-        df["p2_active_hp_pct"] = df["p2_active_hp"] / den_p2_hp
-        df["active_hp_pct_diff"] = df["p1_active_hp_pct"] - df["p2_active_hp_pct"]
-
-        df["p1_fainted"] = 6 - df["p1_remaining"]
-        df["p2_fainted"] = 6 - df["p2_remaining"]
-
-        # --- Team strength (static per game but repeated per turn, safe) ---
-        df["p1_team_strength"] = self._team_strength(df, "p1")
-        df["p2_team_strength"] = self._team_strength(df, "p2")
-        df["team_strength_diff"] = df["p1_team_strength"] - df["p2_team_strength"]
-
-        # --- Switch momentum (cumulative, causal) ---
-        for side in ["p1", "p2"]:
-            col = f"{side}_switch"
-            if col not in df:
-                df[col] = 0
-        df["p1_switch_cumsum"] = df.groupby("game_id")["p1_switch"].cumsum()
-        df["p2_switch_cumsum"] = df.groupby("game_id")["p2_switch"].cumsum()
-        df["switch_diff"] = df["p1_switch_cumsum"] - df["p2_switch_cumsum"]
-        df["switch_diff_change"] = df.groupby("game_id")["switch_diff"].diff().fillna(0)
-
-
-        # --- Last move features (power, type, category) ---
-        for side in ["p1", "p2"]:
-            # Base power of last used move this turn
-            power_terms = []
+            # --- Remaining Pokémon (instantaneous) ---
+            df["p1_remaining"] = 0
+            df["p2_remaining"] = 0
             for i in range(1, 7):
-                for m in range(1, 4 + 1):
-                    used_col = f"{side}_slot{i}_move{m}_used"
-                    power_col = f"{side}_slot{i}_move{m}_base_power"
-                    if used_col in df and power_col in df:
-                        power_terms.append(df[used_col].fillna(0) * df[power_col].fillna(0))
-            df[f"{side}_last_move_power"] = sum(power_terms) if power_terms else 0
+                c1 = f"p1_slot{i}_current_health"
+                c2 = f"p2_slot{i}_current_health"
+                if c1 in df:
+                    df["p1_remaining"] += (df[c1].fillna(0) > 0).astype(int)
+                if c2 in df:
+                    df["p2_remaining"] += (df[c2].fillna(0) > 0).astype(int)
+            df["remaining_diff"] = df["p1_remaining"] - df["p2_remaining"]
 
-            # Type one-hot for last move
-            for t in move_types:
-                terms = []
+            # --- Active HP and speed (instantaneous) ---
+            df["p1_active_hp"] = self._active_stat(df, "p1", "current_health")
+            df["p2_active_hp"] = self._active_stat(df, "p2", "current_health")
+            df["active_hp_diff"] = df["p1_active_hp"] - df["p2_active_hp"]
+
+            df["p1_active_speed"] = self._active_stat(df, "p1", "spe")
+            df["p2_active_speed"] = self._active_stat(df, "p2", "spe")
+            df["active_speed_diff"] = df["p1_active_speed"] - df["p2_active_speed"]
+
+            # --- Boosts (instantaneous) ---
+            p1_boost_cols = [c for c in df.columns if c.startswith("p1_") and c.endswith("_boost")]
+            p2_boost_cols = [c for c in df.columns if c.startswith("p2_") and c.endswith("_boost")]
+            df["p1_boost_sum"] = df[p1_boost_cols].fillna(0).sum(axis=1) if p1_boost_cols else 0
+            df["p2_boost_sum"] = df[p2_boost_cols].fillna(0).sum(axis=1) if p2_boost_cols else 0
+            df["boost_diff"] = df["p1_boost_sum"] - df["p2_boost_sum"]
+
+            df["p1_status_count"] = self._status_count(df, "p1")
+            df["p2_status_count"] = self._status_count(df, "p2")
+            df["status_count_diff"] = df["p1_status_count"] - df["p2_status_count"]
+
+            df["pokemon_lost_p1"] = (
+                df.groupby("game_id")["p1_remaining"]
+                .diff().fillna(0).clip(upper=0).abs()
+            )
+            df["pokemon_lost_p2"] = (
+                df.groupby("game_id")["p2_remaining"]
+                .diff().fillna(0).clip(upper=0).abs()
+            )
+            df["recent_ko_advantage"] = df["pokemon_lost_p2"] - df["pokemon_lost_p1"]
+
+            df["cumulative_remaining_advantage"] = df.groupby("game_id")["remaining_diff"].cumsum()
+
+            # --- Turn number (safe), but NO game_progress ---
+            df["turn_number"] = df.groupby("game_id").cumcount() + 1
+
+            # --- Active HP percentage and fainted counts (instantaneous) ---
+            den_p1_hp = self._active_stat(df, "p1", "hp") + 1e-6
+            den_p2_hp = self._active_stat(df, "p2", "hp") + 1e-6
+            df["p1_active_hp_pct"] = df["p1_active_hp"] / den_p1_hp
+            df["p2_active_hp_pct"] = df["p2_active_hp"] / den_p2_hp
+            df["active_hp_pct_diff"] = df["p1_active_hp_pct"] - df["p2_active_hp_pct"]
+
+            df["p1_fainted"] = 6 - df["p1_remaining"]
+            df["p2_fainted"] = 6 - df["p2_remaining"]
+
+            # --- Team strength (static per game but repeated per turn, safe) ---
+            df["p1_team_strength"] = self._team_strength(df, "p1")
+            df["p2_team_strength"] = self._team_strength(df, "p2")
+            df["team_strength_diff"] = df["p1_team_strength"] - df["p2_team_strength"]
+
+            # --- Switch momentum (cumulative, causal) ---
+            for side in ["p1", "p2"]:
+                col = f"{side}_switch"
+                if col not in df:
+                    df[col] = 0
+            df["p1_switch_cumsum"] = df.groupby("game_id")["p1_switch"].cumsum()
+            df["p2_switch_cumsum"] = df.groupby("game_id")["p2_switch"].cumsum()
+            df["switch_diff"] = df["p1_switch_cumsum"] - df["p2_switch_cumsum"]
+            df["switch_diff_change"] = df.groupby("game_id")["switch_diff"].diff().fillna(0)
+
+            # --- Rolling windows over key diffs (past only) ---
+            roll_specs = [
+                ("remaining_diff", 3),
+                ("switch_diff", 5),
+            ]
+            for col, w in roll_specs:
+                if col in df:
+                    df[f"{col}_roll{w}"] = (
+                        df.groupby("game_id")[col]
+                        .rolling(w, min_periods=1)
+                        .mean()
+                        .reset_index(0, drop=True)
+                    )
+
+            for side in ["p1", "p2"]:
+                # Base power of last used move this turn
+                power_terms = []
                 for i in range(1, 7):
                     for m in range(1, 4 + 1):
                         used_col = f"{side}_slot{i}_move{m}_used"
-                        type_col = f"{side}_slot{i}_move{m}_type_{t}"
-                        if used_col in df and type_col in df:
-                            terms.append(df[used_col].fillna(0) * df[type_col].fillna(0))
-                df[f"{side}_last_move_type_{t}"] = sum(terms) if terms else 0
+                        power_col = f"{side}_slot{i}_move{m}_base_power"
+                        if used_col in df and power_col in df:
+                            power_terms.append(df[used_col].fillna(0) * df[power_col].fillna(0))
+                df[f"{side}_last_move_power"] = sum(power_terms) if power_terms else 0
 
-            # Category one-hot for last move
-            for cat in move_categories:
-                terms = []
-                for i in range(1, 7):
-                    for m in range(1, 4 + 1):
-                        used_col = f"{side}_slot{i}_move{m}_used"
-                        cat_col = f"{side}_slot{i}_move{m}_category_{cat}"
-                        if used_col in df and cat_col in df:
-                            terms.append(df[used_col].fillna(0) * df[cat_col].fillna(0))
-                df[f"{side}_last_move_category_{cat}"] = sum(terms) if terms else 0
+                # Type one-hot for last move
+                for t in move_types:
+                    terms = []
+                    for i in range(1, 7):
+                        for m in range(1, 4 + 1):
+                            used_col = f"{side}_slot{i}_move{m}_used"
+                            type_col = f"{side}_slot{i}_move{m}_type_{t}"
+                            if used_col in df and type_col in df:
+                                terms.append(df[used_col].fillna(0) * df[type_col].fillna(0))
+                    df[f"{side}_last_move_type_{t}"] = sum(terms) if terms else 0
 
-        # Difference in last-move power
-        df["last_move_power_diff"] = df["p1_last_move_power"] - df["p2_last_move_power"]
+                # Category one-hot for last move
+                for cat in move_categories:
+                    terms = []
+                    for i in range(1, 7):
+                        for m in range(1, 4 + 1):
+                            used_col = f"{side}_slot{i}_move{m}_used"
+                            cat_col = f"{side}_slot{i}_move{m}_category_{cat}"
+                            if used_col in df and cat_col in df:
+                                terms.append(df[used_col].fillna(0) * df[cat_col].fillna(0))
+                    df[f"{side}_last_move_category_{cat}"] = sum(terms) if terms else 0
 
-        print("Features Added")
+            # Difference in last-move power
+            df["last_move_power_diff"] = df["p1_last_move_power"] - df["p2_last_move_power"]
+
+            print("Features Added")
         
 
         EXCLUDE_COLS = [
@@ -371,3 +384,103 @@ class SequenceBuilder:
 
     def set_prefix_frac(self, frac):
         self.current_prefix_min_frac = frac
+
+
+class FlatPokemonDataset(Dataset):
+    def __init__(self, X, y):
+        self.X = torch.tensor(X.values, dtype=torch.float32)
+        self.y = torch.tensor(y.values, dtype=torch.float32)
+
+    def __len__(self):
+        return len(self.X)
+
+    def __getitem__(self, idx):
+        return self.X[idx], self.y[idx]
+
+class NNBuilder:
+    def __init__(self, X, y, game_ids, feature_cols):
+        self.X = X
+        self.y = y
+        self.game_ids = game_ids
+        self.feature_cols = feature_cols
+
+    def _build_game_sequences(self, X_df, y_series, game_ids_series):
+        game_test = game_ids_series.unique()
+        test_seqs = []
+        test_labels = []
+
+        for gid in game_test:
+            mask = (game_ids_series == gid)
+            seq_np = X_df[mask].values        # T × F
+            seq_tensor = torch.tensor(seq_np, dtype=torch.float32)
+
+            label = float(y_series[mask].iloc[-1])  # final label
+            test_seqs.append(seq_tensor)
+            test_labels.append(torch.tensor(label, dtype=torch.float32))
+
+        return game_test, test_seqs, test_labels
+
+    def train_test_val_split(self, batch_size, test_split, val_split):
+        unique_games = self.game_ids.unique()
+        np.random.shuffle(unique_games)
+
+        n_test = int(len(unique_games) * test_split)
+        n_val  = int(len(unique_games) * val_split)
+
+        test_games  = set(unique_games[:n_test])
+        val_games   = set(unique_games[n_test:n_test + n_val])
+        train_games = set(unique_games[n_test + n_val:])
+
+        train_mask = self.game_ids.isin(train_games)
+        val_mask   = self.game_ids.isin(val_games)
+        test_mask  = self.game_ids.isin(test_games)
+
+        X_train, X_val, X_test = self.X[train_mask], self.X[val_mask], self.X[test_mask]
+        y_train, y_val, y_test = self.y[train_mask], self.y[val_mask], self.y[test_mask]
+        gid_train, gid_val, gid_test = (
+            self.game_ids[train_mask],
+            self.game_ids[val_mask],
+            self.game_ids[test_mask],
+        )
+
+        # ---- scale ----
+        scaler = StandardScaler()
+        X_train_scaled = pd.DataFrame(
+            scaler.fit_transform(X_train),
+            columns=self.feature_cols,
+            index=X_train.index,
+        )
+        X_val_scaled = pd.DataFrame(
+            scaler.transform(X_val),
+            columns=self.feature_cols,
+            index=X_val.index,
+        )
+        X_test_scaled = pd.DataFrame(
+            scaler.transform(X_test),
+            columns=self.feature_cols,
+            index=X_test.index,
+        )
+
+        # ---- dataset/dataloaders ----
+        train_ds = FlatPokemonDataset(X_train_scaled, y_train)
+        val_ds   = FlatPokemonDataset(X_val_scaled, y_val)
+        test_ds  = FlatPokemonDataset(X_test_scaled, y_test)
+
+        train_loader = DataLoader(train_ds, batch_size=batch_size, shuffle=True)
+        val_loader   = DataLoader(val_ds, batch_size=batch_size)
+        test_loader  = DataLoader(test_ds, batch_size=batch_size)
+
+        # ---- build per-game sequences for visualization ----
+        game_test, test_seqs, test_labels = self._build_game_sequences(
+            X_test_scaled, y_test, gid_test
+        )
+
+        return (
+            train_loader,
+            val_loader,
+            test_loader,
+            game_test,
+            test_seqs,
+            test_labels,
+            scaler,
+        )

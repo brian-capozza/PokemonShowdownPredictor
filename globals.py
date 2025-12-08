@@ -2,7 +2,10 @@ import torch
 
 CSV_PATH = "datasets/gen5ou_games.csv"
 
-BATCH_SIZE = 32
+LSTM = True
+USE_FE = True
+
+BATCH_SIZE = 64
 EPOCHS = 60
 LR = 8e-4
 WEIGHT_DECAY = 1e-4
@@ -13,14 +16,14 @@ VAL_SPLIT = 0.15
 DEVICE = "cuda" if torch.cuda.is_available() else "cpu"
 PAD_VALUE = -1.0
 
-PATIENCE = 12
+PATIENCE = 10
 
 # Prefix curriculum
 MIN_PREFIX_LEN = 3
 PREFIX_MIN_FRAC_START = 0.3
-PREFIX_MIN_FRAC_END = 0.6
+PREFIX_MIN_FRAC_END = 0.3
 current_prefix_min_frac = PREFIX_MIN_FRAC_START
 
 # Regularization
 GRAD_NOISE_STD = 0.003
-LABEL_SMOOTHING = 0.05         # small label smoothing for training loss
+LABEL_SMOOTHING = 0.05
