@@ -3,10 +3,10 @@
 
 ### **1. Preprocessing**
 Run `preprocessing/DataCollector.py` to generate all required data files.  
+
 This script produces:
 
 - `gen5ou_game_text.pkl`
-- `gen5ou_games.csv`
 - `gen5ou_move_data.csv`
 - `gen5ou_moves.json`
 - `gen5ou_pokemon.json`
@@ -16,7 +16,11 @@ These files contain the processed battle logs, move metadata, and Pokémon infor
 ---
 
 ### **2. Baselines**
-Run `preprocessing/main.py` to process the baseline models on the generated data.
+Run `preprocessing/main.py` to process games and the baseline models on the generated data.
+
+This script produces:
+
+- `gen5ou_games.csv`
 
 ---
 
