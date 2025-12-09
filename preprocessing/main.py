@@ -9,9 +9,11 @@ BASELINES = ['base_stat_total', 'p1_win', 'highest_health']
 
 
 def main():
-    game_parser = GameParser(GENERATION, FORMAT)
-    df = game_parser.parse_all_games()
-    df.to_csv(f'datasets/gen{GENERATION}{FORMAT}_games.csv', index=False)
+    #game_parser = GameParser(GENERATION, FORMAT)
+    #df = game_parser.parse_all_games()
+    #df.to_csv(f'datasets/gen{GENERATION}{FORMAT}_games.csv', index=False)
+
+    df = pd.read_csv(f'datasets/gen{GENERATION}{FORMAT}_games.csv')
 
     print(f'===== Evaluation of (gen{GENERATION}{FORMAT}) =====')
     base_model = BaselineModel(df)
