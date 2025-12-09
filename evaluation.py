@@ -29,58 +29,34 @@ class ModelEvaluation:
         self.criterion = criterion
         self.optimizer = optimizer
         self.device = device
-        self.seq_builder = None  # optional, only needed for seq curriculum / padding
+        self.seq_builder = None
 
-    # ----------- small helper: handle (x,y) vs (x,lengths,y) ----------
-    def _unpack_batch(self, batch):
-        """
-        Supports:
-          - sequence loaders: (x, lengths, y)
-          - flat loaders:     (x, y)
-        """
+    def _unpack_batch(self, batch): # Used ChatGPT to help normalize the class for both NN models
         if len(batch) == 3:
             x, lengths, y = batch
         elif len(batch) == 2:
             x, y = batch
-            # dummy lengths = 1 so weighting logic still works
             lengths = torch.ones(len(y), dtype=torch.long, device=x.device)
         else:
             raise ValueError(f"Unexpected batch format with len={len(batch)}")
 
         return x, lengths, y
 
-    # ----------- forward wrapper for both LSTM and MLP ----------
-    def _forward_model(self, x, lengths):
-        """
-        Universal forward handler.
-
-        - If model is an MLP (has .network) and x is [B, F]:
-              just call model(x)
-        - If model is an MLP and x is [B, T, F]:
-              use last-turn features (for sequence inputs)
-        - Else (LSTM / seq model):
-              call model(x, lengths) if possible
-        """
-        # MLP-style model
+    def _forward_model(self, x, lengths): # Used ChatGPT to help normalize the class for both NN models
         if hasattr(self.model, "network"):
             if x.dim() == 2:
-                # Flat per-turn features [B, F]
                 return self.model(x)
             elif x.dim() == 3:
-                # Sequence input [B, T, F] → last-turn features
                 B, T, F = x.shape
-                last = x[torch.arange(B, device=x.device), lengths - 1, :]  # [B, F]
+                last = x[torch.arange(B, device=x.device), lengths - 1, :]
                 return self.model(last)
             else:
                 raise ValueError(f"Unexpected input dim for MLP: x.dim() = {x.dim()}")
-
-        # LSTM / other sequence model
         try:
             return self.model(x, lengths)
         except TypeError:
             return self.model(x)
 
-    # ----------- EVAL + LOSS ----------
     def _evaluate(self, loader):
         self.model.eval()
         correct = 0
@@ -105,17 +81,12 @@ class ModelEvaluation:
                 x, lengths, y = self._unpack_batch(batch)
                 x, y = x.to(self.device), y.to(self.device)
                 logits = self._forward_model(x, lengths)
-                # Use true labels for validation loss (no smoothing)
                 sample_losses = self.criterion(logits, y)
                 total_loss += sample_losses.mean().item()
                 count += 1
         return total_loss / max(1, count)
 
     def _evaluate_with_prefix(self, loader, prefix_frac=0.5):
-        """
-        Only really makes sense for sequence datasets.
-        For flat datasets (no lengths, no seqs) you wouldn't use this.
-        """
         self.model.eval()
         correct = 0
         total = 0
@@ -134,13 +105,12 @@ class ModelEvaluation:
 
         return correct / total if total > 0 else 0.0
 
-    # ----------- TRAINING LOOP ----------
     def train_and_evaluate(
         self,
         train_loader,
         val_loader,
         test_loader,
-        seq_builder,             # can be None for flat dataset
+        seq_builder,
         epochs,
         prefix_min_start,
         prefix_min_end,
@@ -149,7 +119,7 @@ class ModelEvaluation:
         grad_noise_std,
     ):
         self.test_loader = test_loader
-        self.seq_builder = seq_builder  # may be None in flat setting
+        self.seq_builder = seq_builder
 
         best_val_loss = float("inf")
         self.best_val_acc_at_best_loss = 0.0
@@ -170,7 +140,7 @@ class ModelEvaluation:
             batch_count = 0
 
             # update prefix curriculum only if we have a seq_builder
-            if self.seq_builder is not None:
+            if self.seq_builder is not None: # Used ChatGPT to help normalize the class for both NN models
                 progress = (epoch - 1) / max(1, epochs - 1)
                 current_prefix_min_frac = (
                     prefix_min_start
@@ -179,7 +149,7 @@ class ModelEvaluation:
                 self.seq_builder.set_prefix_frac(current_prefix_min_frac)
                 current_prefix_min_frac = float(np.clip(current_prefix_min_frac, 0.0, 1.0))
             else:
-                current_prefix_min_frac = 1.0  # full turns, but unused
+                current_prefix_min_frac = 1.0
 
             for batch in train_loader:
                 x, lengths, y = self._unpack_batch(batch)
@@ -188,15 +158,13 @@ class ModelEvaluation:
                 self.optimizer.zero_grad()
                 logits = self._forward_model(x, lengths)
 
-                # Label smoothing for training loss
-                if label_smoothing > 0.0:
+                if label_smoothing > 0.0: # Used ChatGPT to help improve models
                     y_smooth = y * (1.0 - label_smoothing) + 0.5 * label_smoothing
                 else:
                     y_smooth = y
 
                 sample_losses = self.criterion(logits, y_smooth)
 
-                # Prefix-length-based weights (for sequence datasets)
                 if lengths is not None and lengths.numel() > 0:
                     w = (lengths.float() / lengths.max().float()).to(self.device)
                 else:
@@ -258,14 +226,8 @@ class ModelEvaluation:
             f"Best Val Loss: {best_val_loss:.4f}"
         )
 
-    # ----------- FEATURE IMPORTANCE ----------
     def compute_feature_importance(self, test_loader, feature_names, num_batches=20):
-        """
-        Computes global feature importance by averaging gradients of the output
-        with respect to the inputs across several batches.
-        Works for both sequence [B,T,F] and flat [B,F] inputs.
-        """
-
+        # Used ChatGPT to help understand how to calculate feature importance for gradients
         was_training = self.model.training
         self.model.train()
 
@@ -290,11 +252,9 @@ class ModelEvaluation:
             loss.backward()
 
             if x.dim() == 3:
-                # [B, T, F] → average over B and T
-                grad = x.grad.detach().abs().mean(dim=(0, 1))  # [F]
+                grad = x.grad.detach().abs().mean(dim=(0, 1))
             else:
-                # [B, F] → average over B
-                grad = x.grad.detach().abs().mean(dim=0)       # [F]
+                grad = x.grad.detach().abs().mean(dim=0)
 
             if importance is None:
                 importance = grad.cpu().numpy()
@@ -314,7 +274,7 @@ class ModelEvaluation:
 
         return importance
 
-    def plot_feature_importance(self, importance, feature_names, top_k=30):
+    def plot_feature_importance(self, importance, feature_names, top_k=30): # Used ChatGPT to help build visualizations
         idx = np.argsort(importance)[::-1][:top_k]
         top_features = np.array(feature_names)[idx]
         top_values = importance[idx]
@@ -328,7 +288,6 @@ class ModelEvaluation:
         plt.savefig("feature_importance.png", dpi=250, bbox_inches="tight")
         plt.show()
 
-    # ----------- METRICS ----------
     def _compute_metrics(self, loader):
         self.model.eval()
         all_probs = []
@@ -354,8 +313,7 @@ class ModelEvaluation:
 
         return precision, recall, f1
 
-    # ----------- TRAINING CURVES ----------
-    def visualize_training(self):
+    def visualize_training(self): # Used ChatGPT to help build visualizations
         set_pokemon_theme()
 
         fig, (ax1, ax2) = plt.subplots(1, 2, figsize=(15, 5))
@@ -391,8 +349,7 @@ class ModelEvaluation:
         plt.show()
 
 
-    # ----------- WIN PROBABILITY CURVES ----------
-    def visualize_games(self, game_test, test_seqs, test_labels):
+    def visualize_games(self, game_test, test_seqs, test_labels): # Used ChatGPT to help build visualizations
         set_pokemon_theme()
         print("\nGenerating Pokémon-style win probability curves...\n")
 
@@ -452,8 +409,7 @@ class ModelEvaluation:
         plt.show()
 
 
-    # ----------- PRF BAR PLOT ----------
-    def visualize_prf(self):
+    def visualize_prf(self): # Used ChatGPT to help build visualizations
         set_pokemon_theme()
 
         fig, ax = plt.subplots(figsize=(7, 5))
@@ -479,8 +435,8 @@ class ModelEvaluation:
         plt.savefig("prf_metrics.png", dpi=250, bbox_inches="tight")
         plt.show()
 
-    # ----------- SUMMARY / CALIBRATION ----------
-    def summary(self):
+
+    def summary(self): # Used ChatGPT to help display summary statistics
         print("\nGenerating calibration and prediction distribution plots...")
 
         all_probs = []

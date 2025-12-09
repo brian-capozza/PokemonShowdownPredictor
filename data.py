@@ -83,14 +83,12 @@ class FeatureEngineering:
 
         if self.use_fe:
 
-            print("Adding features...")
+            print("Adding features...") # ChatGPT used to help complete feature engineering
 
-            # --- Team HP totals and damage (instantaneous + diff to previous turn) ---
             df["p1_team_hp_total"] = self._team_hp_total(df, "p1")
             df["p2_team_hp_total"] = self._team_hp_total(df, "p2")
             df["team_hp_total_diff"] = df["p1_team_hp_total"] - df["p2_team_hp_total"]
 
-            # --- Remaining Pokémon (instantaneous) ---
             df["p1_remaining"] = 0
             df["p2_remaining"] = 0
             for i in range(1, 7):
@@ -102,7 +100,6 @@ class FeatureEngineering:
                     df["p2_remaining"] += (df[c2].fillna(0) > 0).astype(int)
             df["remaining_diff"] = df["p1_remaining"] - df["p2_remaining"]
 
-            # --- Active HP and speed (instantaneous) ---
             df["p1_active_hp"] = self._active_stat(df, "p1", "current_health")
             df["p2_active_hp"] = self._active_stat(df, "p2", "current_health")
             df["active_hp_diff"] = df["p1_active_hp"] - df["p2_active_hp"]
@@ -111,7 +108,6 @@ class FeatureEngineering:
             df["p2_active_speed"] = self._active_stat(df, "p2", "spe")
             df["active_speed_diff"] = df["p1_active_speed"] - df["p2_active_speed"]
 
-            # --- Boosts (instantaneous) ---
             p1_boost_cols = [c for c in df.columns if c.startswith("p1_") and c.endswith("_boost")]
             p2_boost_cols = [c for c in df.columns if c.startswith("p2_") and c.endswith("_boost")]
             df["p1_boost_sum"] = df[p1_boost_cols].fillna(0).sum(axis=1) if p1_boost_cols else 0
@@ -137,12 +133,10 @@ class FeatureEngineering:
             df["p1_fainted"] = 6 - df["p1_remaining"]
             df["p2_fainted"] = 6 - df["p2_remaining"]
 
-            # --- Team strength (static per game but repeated per turn, safe) ---
             df["p1_team_strength"] = self._team_strength(df, "p1")
             df["p2_team_strength"] = self._team_strength(df, "p2")
             df["team_strength_diff"] = df["p1_team_strength"] - df["p2_team_strength"]
 
-            # --- Switch momentum (cumulative, causal) ---
             for side in ["p1", "p2"]:
                 col = f"{side}_switch"
                 if col not in df:
@@ -152,7 +146,6 @@ class FeatureEngineering:
             df["switch_diff"] = df["p1_switch_cumsum"] - df["p2_switch_cumsum"]
             df["switch_diff_change"] = df.groupby("game_id")["switch_diff"].diff().fillna(0)
 
-            # --- Rolling windows over key diffs (past only) ---
             roll_specs = [
                 ("remaining_diff", 3),
                 ("switch_diff", 5),
@@ -286,9 +279,6 @@ class SequenceBuilder:
 
 
     def _collate_fn_eval(self, batch):
-        """
-        Collate without prefix sampling: full games.
-        """
         seqs, labels = zip(*batch)
 
         seqs = list(seqs)
@@ -401,10 +391,10 @@ class NNBuilder:
 
         for gid in game_test:
             mask = (game_ids_series == gid)
-            seq_np = X_df[mask].values        # T × F
+            seq_np = X_df[mask].values
             seq_tensor = torch.tensor(seq_np, dtype=torch.float32)
 
-            label = float(y_series[mask].iloc[-1])  # final label
+            label = float(y_series[mask].iloc[-1])
             test_seqs.append(seq_tensor)
             test_labels.append(torch.tensor(label, dtype=torch.float32))
 
@@ -433,7 +423,6 @@ class NNBuilder:
             self.game_ids[test_mask],
         )
 
-        # ---- scale ----
         scaler = StandardScaler()
         X_train_scaled = pd.DataFrame(
             scaler.fit_transform(X_train),
@@ -451,7 +440,6 @@ class NNBuilder:
             index=X_test.index,
         )
 
-        # ---- dataset/dataloaders ----
         train_ds = FlatPokemonDataset(X_train_scaled, y_train)
         val_ds   = FlatPokemonDataset(X_val_scaled, y_val)
         test_ds  = FlatPokemonDataset(X_test_scaled, y_test)
@@ -460,7 +448,6 @@ class NNBuilder:
         val_loader   = DataLoader(val_ds, batch_size=batch_size)
         test_loader  = DataLoader(test_ds, batch_size=batch_size)
 
-        # ---- build per-game sequences for visualization ----
         game_test, test_seqs, test_labels = self._build_game_sequences(
             X_test_scaled, y_test, gid_test
         )

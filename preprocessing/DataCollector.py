@@ -66,7 +66,6 @@ class MovesetParser():
             turn_num = int(turn_num)
             for event in turn:
 
-                # ─────────── MOVE ───────────
                 if '|move|' in event:
                     # |move|p1a: Persian|Fake Out|p2a: Landorus
                     event_list = event.split('|')
@@ -319,7 +318,6 @@ def main():
       print(dl.get_move('Giga Drain'))
       print(dl.get_pokemon('Pikachu'))
       print(dl.get_pokemon_learnset('Tyranitar'))
-
     '''
     #dl = DataCollector(use_api=True, generation=5, format='ou', num_pages=100)
     dl = DataCollector(use_api=False, generation=5, format='ou')

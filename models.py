@@ -39,9 +39,9 @@ class PokemonFullNet(nn.Module):
             nn.Linear(128, 64),
             nn.ReLU(),
             nn.Dropout(0.1),
-            nn.Linear(64, 1),  # logits
+            nn.Linear(64, 1)
         )
 
     def forward(self, X):
-        out = self.network(X)      # [B, 1]
-        return out.squeeze(1)      # [B]
+        out = self.network(X)
+        return out.squeeze(1)

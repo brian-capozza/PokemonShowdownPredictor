@@ -18,12 +18,11 @@ PAD_VALUE = -1.0
 
 PATIENCE = 10
 
-# Prefix curriculum
 MIN_PREFIX_LEN = 3
 PREFIX_MIN_FRAC_START = 0.3
 PREFIX_MIN_FRAC_END = 0.3
 current_prefix_min_frac = PREFIX_MIN_FRAC_START
 
-# Regularization
+
 GRAD_NOISE_STD = 0.003
 LABEL_SMOOTHING = 0.05

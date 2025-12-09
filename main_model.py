@@ -77,7 +77,6 @@ def main():
             grad_noise_std=0.0,
         )
 
-        # MLP visualization now works!
         me.visualize_training()
         me.visualize_games(game_test, test_seqs, test_labels)
         me.visualize_prf()
