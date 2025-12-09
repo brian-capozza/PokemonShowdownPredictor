@@ -2,7 +2,7 @@
 ## **Usage**
 
 ### **1. Preprocessing**
-Run `preprocessing/main.py` to generate all required data files.  
+Run `preprocessing/DataCollector.py` to generate all required data files.  
 This script produces:
 
 - `gen5ou_game_text.pkl`
@@ -15,7 +15,12 @@ These files contain the processed battle logs, move metadata, and Pokémon infor
 
 ---
 
-### **2. Model Training**
+### **2. Baselines**
+Run `preprocessing/main.py` to process the baseline models on the generated data.
+
+---
+
+### **3. Model Training**
 After preprocessing is complete, run `main_model.py`.  
 All hyperparameters are defined in `globals.py`, including:
 
